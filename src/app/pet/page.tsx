@@ -50,7 +50,8 @@ export default function Pet() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
-      <DuckScene ref={duckRef} dragRegion layEnabled onRequestAgenda={openAgenda} />
+      {/* Sticky duck: pinned in place (no drag), always on top, all spaces. */}
+      <DuckScene ref={duckRef} layEnabled onRequestAgenda={openAgenda} />
     </div>
   );
 }

@@ -12,6 +12,49 @@ use tauri::{
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
+/// macOS: pin a window so it floats on every Space and stays visible over
+/// fullscreen apps. Sets the NSWindow collection behavior + a high level,
+/// which the cross-platform Tauri helpers don't fully cover.
+#[cfg(target_os = "macos")]
+fn pin_over_everything(window: &tauri::WebviewWindow) {
+    use objc::runtime::Object;
+    use objc::{msg_send, sel, sel_impl};
+    if let Ok(ptr) = window.ns_window() {
+        let ns = ptr as *mut Object;
+        // canJoinAllSpaces (1<<0) | stationary (1<<4) | fullScreenAuxiliary (1<<8)
+        let behavior: u64 = (1 << 0) | (1 << 4) | (1 << 8);
+        // NSStatusWindowLevel keeps it above normal windows.
+        let level: i64 = 25;
+        unsafe {
+            let _: () = msg_send![ns, setCollectionBehavior: behavior];
+            let _: () = msg_send![ns, setLevel: level];
+        }
+    }
+}
+
+/// Park the duck in the bottom-right corner of the primary monitor, leaving a
+/// margin so it clears the dock. Called on launch so it always shows up in the
+/// same sticky spot.
+fn pin_to_corner(window: &tauri::WebviewWindow) {
+    let monitor = match window.primary_monitor() {
+        Ok(Some(m)) => m,
+        _ => return,
+    };
+    let msize = monitor.size();
+    let mpos = monitor.position();
+    let wsize = match window.outer_size() {
+        Ok(s) => s,
+        _ => return,
+    };
+    let scale = monitor.scale_factor();
+    let margin_x = (24.0 * scale) as i32;
+    let margin_y = (96.0 * scale) as i32; // clear the dock
+
+    let x = mpos.x + msize.width as i32 - wsize.width as i32 - margin_x;
+    let y = mpos.y + msize.height as i32 - wsize.height as i32 - margin_y;
+    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
 /// Toggle the floating duck window's visibility.
 fn toggle_pet(app: &tauri::AppHandle) {
     if let Some(win) = app.get_webview_window("pet") {
@@ -46,15 +89,16 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             None,
         ))
-        // Remembers the duck's window position/size between launches.
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            // Make the floating duck visible on every desktop/space and keep it
-            // above other windows — including fullscreen apps — so it sticks
-            // wherever you put it, no matter what you switch to.
+            // Make the duck sticky: pinned to a fixed corner, visible on every
+            // desktop/space and above other windows — including fullscreen apps
+            // — so it stays in one place no matter what you switch to.
             if let Some(pet) = app.get_webview_window("pet") {
                 let _ = pet.set_visible_on_all_workspaces(true);
                 let _ = pet.set_always_on_top(true);
+                #[cfg(target_os = "macos")]
+                pin_over_everything(&pet);
+                pin_to_corner(&pet);
             }
 
             let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);

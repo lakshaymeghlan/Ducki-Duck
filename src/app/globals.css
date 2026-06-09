@@ -85,14 +85,12 @@ h3 {
   transform: scaleY(0.08);
 }
 
-/* Bill opening when the duck quacks */
+/* Lower beak drops open when the duck quacks (pixel grid, 16-unit space) */
 .bill-bottom {
-  transform-box: fill-box;
-  transform-origin: 30% 0%;
   transition: transform 120ms ease-out;
 }
 .duck-svg.reacting .bill-bottom {
-  transform: rotate(16deg) translateY(2px);
+  transform: translateY(5px);
 }
 
 @media (prefers-reduced-motion: reduce) {

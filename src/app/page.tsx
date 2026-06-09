@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Duck, type DuckHandle } from "@/components/Duck";
+import { type DuckHandle } from "@/components/Duck";
+import { DuckScene } from "@/components/DuckScene";
 import { DebugPanel } from "@/components/DebugPanel";
 import { Agenda } from "@/components/Agenda";
 import { Banner, type BannerData } from "@/components/Banner";
@@ -95,9 +96,13 @@ export default function Home() {
       <main className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 items-start gap-8 px-5 py-8 lg:grid-cols-[1fr_minmax(360px,420px)]">
         {/* Hero: the duck */}
         <section className="flex flex-col items-center justify-center gap-4 lg:sticky lg:top-8">
-          <Duck ref={duckRef} />
+          <DuckScene
+            ref={duckRef}
+            layEnabled={!desktop}
+            onAddReminder={handleAdd}
+          />
           <p className="max-w-xs text-center text-sm text-ink-soft">
-            Click the duck. That&apos;s it. That&apos;s the whole feature.
+            Click to quack · right-click for reminders · it lays eggs you can pop.
           </p>
         </section>
 

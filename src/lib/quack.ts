@@ -28,54 +28,73 @@ export function unlockAudio(): void {
   getContext();
 }
 
-/** Play a single quack. Debounced so rapid clicks don't get harsh. */
+// One blocky "bawk" cluck note: a square wave with a quick up-then-down pitch
+// contour through a band-pass, softened by a low-pass. Square gives the chunky,
+// 8-bit Minecraft timbre.
+function cluck(
+  audio: AudioContext,
+  t0: number,
+  base: number,
+  level: number
+): void {
+  const dur = 0.12;
+
+  const osc = audio.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(base * 0.78, t0);
+  osc.frequency.exponentialRampToValueAtTime(base * 1.3, t0 + 0.028);
+  osc.frequency.exponentialRampToValueAtTime(base * 0.55, t0 + dur);
+
+  // A touch of triangle underneath for body.
+  const sub = audio.createOscillator();
+  sub.type = "triangle";
+  sub.frequency.setValueAtTime(base * 0.5, t0);
+  sub.frequency.exponentialRampToValueAtTime(base * 0.34, t0 + dur);
+
+  const bandpass = audio.createBiquadFilter();
+  bandpass.type = "bandpass";
+  bandpass.frequency.value = base * 2.1;
+  bandpass.Q.value = 4.5;
+
+  const lowpass = audio.createBiquadFilter();
+  lowpass.type = "lowpass";
+  lowpass.frequency.value = 2600;
+
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(level, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(level * 0.5, t0 + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+  osc.connect(bandpass);
+  sub.connect(bandpass);
+  bandpass.connect(lowpass);
+  lowpass.connect(gain);
+  gain.connect(audio.destination);
+
+  osc.start(t0);
+  sub.start(t0);
+  osc.stop(t0 + dur + 0.02);
+  sub.stop(t0 + dur + 0.02);
+}
+
+/** Play a chicken-y double cluck ("ba-gawk"). Debounced for rapid clicks. */
 export function quack(): void {
   const audio = getContext();
   if (!audio) return;
 
   const now = audio.currentTime;
-  // Debounce: ignore quacks within ~70ms of the previous one.
-  if (now - lastQuack < 0.07) return;
+  // Debounce: the full two-note cluck is ~0.25s, so don't retrigger too fast.
+  if (now - lastQuack < 0.16) return;
   lastQuack = now;
 
-  // Slight random variation so no two quacks are identical.
-  const variation = 0.85 + Math.random() * 0.3; // 0.85–1.15
-  const startFreq = 320 * variation;
-  const endFreq = 130 * variation;
-  const dur = 0.18;
+  // Slight random variation so no two clucks are identical.
+  const variation = 0.9 + Math.random() * 0.2; // 0.9–1.1
+  const base = 300 * variation;
 
-  // Source: sawtooth gives the buzzy, reedy vowel of a quack.
-  const osc = audio.createOscillator();
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(startFreq, now);
-  osc.frequency.exponentialRampToValueAtTime(endFreq, now + dur);
-
-  // Band-pass carves a vocal-ish formant out of the buzz.
-  const bandpass = audio.createBiquadFilter();
-  bandpass.type = "bandpass";
-  bandpass.frequency.setValueAtTime(1200 * variation, now);
-  bandpass.frequency.exponentialRampToValueAtTime(700 * variation, now + dur);
-  bandpass.Q.value = 6;
-
-  // Gentle high cut so it isn't fizzy.
-  const lowpass = audio.createBiquadFilter();
-  lowpass.type = "lowpass";
-  lowpass.frequency.value = 3500;
-
-  // Amplitude envelope: quick attack, short decay — a little "quack" blip.
-  const gain = audio.createGain();
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.28, now + 0.012);
-  gain.gain.exponentialRampToValueAtTime(0.12, now + 0.06);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-
-  osc.connect(bandpass);
-  bandpass.connect(lowpass);
-  lowpass.connect(gain);
-  gain.connect(audio.destination);
-
-  osc.start(now);
-  osc.stop(now + dur + 0.02);
+  // Two syllables: a lower "ba" then a higher "gawk".
+  cluck(audio, now, base * 0.85, 0.22);
+  cluck(audio, now + 0.12, base * 1.18, 0.26);
 }
 
 const QUACK_VARIANTS = [

@@ -46,7 +46,17 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             None,
         ))
+        // Remembers the duck's window position/size between launches.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            // Make the floating duck visible on every desktop/space and keep it
+            // above other windows — including fullscreen apps — so it sticks
+            // wherever you put it, no matter what you switch to.
+            if let Some(pet) = app.get_webview_window("pet") {
+                let _ = pet.set_visible_on_all_workspaces(true);
+                let _ = pet.set_always_on_top(true);
+            }
+
             let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
 
             let show_hide =

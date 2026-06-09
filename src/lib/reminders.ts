@@ -24,6 +24,20 @@ export interface Reminder {
   lastFired?: number | string;
 }
 
+/** A sensible default emoji per reminder type when the user doesn't pick one. */
+export function defaultEmoji(type: ReminderType): string {
+  switch (type) {
+    case "interval":
+      return "⏳";
+    case "daily":
+      return "🗓";
+    case "once":
+      return "⏰";
+    default:
+      return "🦆";
+  }
+}
+
 export function createId(): string {
   // Good enough for local, single-user data.
   return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

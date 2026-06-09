@@ -33,75 +33,76 @@ interface DuckProps {
   dragRegion?: boolean;
 }
 
-// The duck, drawn entirely in code — classic glossy rubber duck.
+// The duck, drawn entirely in code — a blocky Minecraft chicken in 3/4 view.
+// Recreated from scratch as voxel cubes (front + top + side faces, 3 shades
+// each) for that lit-from-the-left Minecraft look. Flat colors, crisp edges.
+const C = {
+  bodyTop: "#FFFFFF",
+  bodyFront: "#ECEEF0",
+  bodySide: "#CFD3D7",
+  bodyShade: "#BCC1C6",
+  beakTop: "#F2B65E",
+  beakFront: "#E29A3B",
+  beakUnder: "#B26E22",
+  wattle: "#CC3A29",
+  wattleShade: "#A82C1D",
+  leg: "#E2922E",
+  legShade: "#BD7720",
+  eye: "#1B1B1B",
+};
+
 function DuckArt() {
   return (
     <svg
       className="duck-svg w-full h-full overflow-visible"
-      viewBox="0 0 220 200"
+      viewBox="0 0 120 120"
       xmlns="http://www.w3.org/2000/svg"
+      shapeRendering="crispEdges"
       role="img"
-      aria-label="A cheerful rubber duck"
+      aria-label="A blocky Minecraft chicken"
     >
-      <defs>
-        <radialGradient id="bodyGrad" cx="38%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#FFE680" />
-          <stop offset="55%" stopColor="#FFD23F" />
-          <stop offset="100%" stopColor="#F4B400" />
-        </radialGradient>
-        <radialGradient id="headGrad" cx="35%" cy="28%" r="85%">
-          <stop offset="0%" stopColor="#FFEE9C" />
-          <stop offset="60%" stopColor="#FFD23F" />
-          <stop offset="100%" stopColor="#F6BC12" />
-        </radialGradient>
-        <linearGradient id="billGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFA53B" />
-          <stop offset="100%" stopColor="#F47B1F" />
-        </linearGradient>
-      </defs>
+      {/* ---- Body cube (upper right) ---- */}
+      <polygon points="52,40 104,40 116,28 64,28" fill={C.bodyTop} />
+      <polygon points="104,40 116,28 116,74 104,86" fill={C.bodySide} />
+      <rect x="52" y="40" width="52" height="46" fill={C.bodyFront} />
 
-      {/* Body */}
-      <path
-        d="M40 150 C 20 150, 14 120, 36 108 C 30 78, 60 60, 96 66 C 120 40, 168 44, 176 78 C 200 86, 200 128, 170 140 C 168 152, 150 160, 120 160 Z"
-        fill="url(#bodyGrad)"
-      />
+      {/* Wing panel on the body's front face */}
+      <rect x="72" y="50" width="26" height="26" fill={C.bodySide} />
+      <rect x="72" y="64" width="26" height="3" fill={C.bodyShade} />
+      <rect x="72" y="72" width="26" height="3" fill={C.bodyShade} />
 
-      {/* Wing */}
-      <path
-        d="M70 120 C 92 104, 132 104, 150 120 C 132 134, 92 134, 70 120 Z"
-        fill="#F2B100"
-        opacity="0.55"
-      />
+      {/* ---- Legs + feet ---- */}
+      <rect x="44" y="84" width="9" height="20" fill={C.leg} />
+      <rect x="50" y="84" width="3" height="20" fill={C.legShade} />
+      <rect x="68" y="84" width="9" height="20" fill={C.leg} />
+      <rect x="74" y="84" width="3" height="20" fill={C.legShade} />
+      <polygon points="36,104 56,104 60,110 40,110" fill={C.leg} />
+      <polygon points="60,104 80,104 84,110 64,110" fill={C.leg} />
+      <rect x="36" y="109" width="24" height="2" fill={C.legShade} />
+      <rect x="60" y="109" width="24" height="2" fill={C.legShade} />
 
-      {/* Head */}
-      <circle cx="150" cy="78" r="42" fill="url(#headGrad)" />
+      {/* ---- Head cube (front left) ---- */}
+      <polygon points="16,34 66,34 78,22 28,22" fill={C.bodyTop} />
+      <polygon points="66,34 78,22 78,72 66,84" fill={C.bodySide} />
+      <rect x="16" y="34" width="50" height="50" fill={C.bodyFront} />
 
-      {/* Bill — bottom rotates open on quack (CSS .reacting) */}
-      <g className="duck-bill">
-        <path
-          className="bill-top"
-          d="M176 74 C 206 66, 218 74, 214 84 C 210 92, 184 92, 176 86 Z"
-          fill="url(#billGrad)"
-        />
-        <path
-          className="bill-bottom"
-          d="M176 86 C 188 96, 208 96, 212 90 C 214 96, 204 104, 184 102 C 178 100, 175 94, 176 86 Z"
-          fill="#E06A12"
-        />
-      </g>
-
-      {/* Eye — scaleY animates to blink (CSS .blinking) */}
+      {/* Eye — squashes to blink (CSS .blinking) */}
       <g className="duck-eye">
-        <circle cx="158" cy="66" r="7.5" fill="#1E2A38" />
-        <circle cx="160.5" cy="63" r="2.4" fill="#FFFFFF" />
+        <rect x="34" y="44" width="9" height="13" fill={C.eye} />
       </g>
 
-      {/* Cheek blush */}
-      <circle cx="138" cy="92" r="7" fill="#FFB36B" opacity="0.45" />
+      {/* ---- Beak (orange), projecting left ---- */}
+      <polygon points="2,52 28,52 36,44 10,44" fill={C.beakTop} />
+      <rect x="2" y="52" width="26" height="12" fill={C.beakFront} />
 
-      {/* Glossy highlights */}
-      <ellipse cx="78" cy="92" rx="26" ry="14" fill="#FFFFFF" opacity="0.35" />
-      <ellipse cx="138" cy="56" rx="12" ry="7" fill="#FFFFFF" opacity="0.4" />
+      {/* Lower beak — drops open on quack (CSS .reacting) */}
+      <g className="bill-bottom">
+        <rect x="5" y="64" width="22" height="7" fill={C.beakUnder} />
+      </g>
+
+      {/* ---- Wattle (red) under the beak ---- */}
+      <rect x="12" y="72" width="11" height="11" fill={C.wattle} />
+      <rect x="20" y="72" width="3" height="11" fill={C.wattleShade} />
     </svg>
   );
 }

@@ -28,73 +28,63 @@ export function unlockAudio(): void {
   getContext();
 }
 
-// One blocky "bawk" cluck note: a square wave with a quick up-then-down pitch
-// contour through a band-pass, softened by a low-pass. Square gives the chunky,
-// 8-bit Minecraft timbre.
-function cluck(
+// One real-duck "quack": a sawtooth with a fast downward pitch sweep through a
+// band-pass formant, shaped by a short amplitude envelope. Cartoonish + reedy,
+// the classic quack vowel.
+function oneQuack(
   audio: AudioContext,
   t0: number,
-  base: number,
+  variation: number,
   level: number
 ): void {
-  const dur = 0.12;
+  const dur = 0.16;
+  const startFreq = 320 * variation;
+  const endFreq = 130 * variation;
 
   const osc = audio.createOscillator();
-  osc.type = "square";
-  osc.frequency.setValueAtTime(base * 0.78, t0);
-  osc.frequency.exponentialRampToValueAtTime(base * 1.3, t0 + 0.028);
-  osc.frequency.exponentialRampToValueAtTime(base * 0.55, t0 + dur);
-
-  // A touch of triangle underneath for body.
-  const sub = audio.createOscillator();
-  sub.type = "triangle";
-  sub.frequency.setValueAtTime(base * 0.5, t0);
-  sub.frequency.exponentialRampToValueAtTime(base * 0.34, t0 + dur);
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(startFreq, t0);
+  osc.frequency.exponentialRampToValueAtTime(endFreq, t0 + dur);
 
   const bandpass = audio.createBiquadFilter();
   bandpass.type = "bandpass";
-  bandpass.frequency.value = base * 2.1;
-  bandpass.Q.value = 4.5;
+  bandpass.frequency.setValueAtTime(1200 * variation, t0);
+  bandpass.frequency.exponentialRampToValueAtTime(700 * variation, t0 + dur);
+  bandpass.Q.value = 6;
 
   const lowpass = audio.createBiquadFilter();
   lowpass.type = "lowpass";
-  lowpass.frequency.value = 2600;
+  lowpass.frequency.value = 3500;
 
   const gain = audio.createGain();
   gain.gain.setValueAtTime(0.0001, t0);
-  gain.gain.exponentialRampToValueAtTime(level, t0 + 0.01);
-  gain.gain.exponentialRampToValueAtTime(level * 0.5, t0 + 0.05);
+  gain.gain.exponentialRampToValueAtTime(level, t0 + 0.012);
+  gain.gain.exponentialRampToValueAtTime(level * 0.45, t0 + 0.06);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
   osc.connect(bandpass);
-  sub.connect(bandpass);
   bandpass.connect(lowpass);
   lowpass.connect(gain);
   gain.connect(audio.destination);
 
   osc.start(t0);
-  sub.start(t0);
   osc.stop(t0 + dur + 0.02);
-  sub.stop(t0 + dur + 0.02);
 }
 
-/** Play a chicken-y double cluck ("ba-gawk"). Debounced for rapid clicks. */
+/** Play a real duck "quack quack" — two quacks. Debounced for rapid clicks. */
 export function quack(): void {
   const audio = getContext();
   if (!audio) return;
 
   const now = audio.currentTime;
-  // Debounce: the full two-note cluck is ~0.25s, so don't retrigger too fast.
-  if (now - lastQuack < 0.16) return;
+  // The full "quack quack" is ~0.35s; don't retrigger too fast.
+  if (now - lastQuack < 0.2) return;
   lastQuack = now;
 
-  // Slight random variation so no two clucks are identical.
-  const variation = 0.9 + Math.random() * 0.2; // 0.9–1.1
-  const base = 300 * variation;
-
-  // Two syllables: a lower "ba" then a higher "gawk".
-  cluck(audio, now, base * 0.85, 0.22);
-  cluck(audio, now + 0.12, base * 1.18, 0.26);
+  // Slight random variation so no two quacks are identical.
+  const variation = 0.9 + Math.random() * 0.25;
+  oneQuack(audio, now, variation, 0.26);
+  oneQuack(audio, now + 0.19, variation * 1.04, 0.24);
 }
 
 const QUACK_VARIANTS = [

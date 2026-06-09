@@ -1,65 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Duck, type DuckHandle } from "@/components/Duck";
+import { DebugPanel } from "@/components/DebugPanel";
+import { Agenda } from "@/components/Agenda";
+import { Banner, type BannerData } from "@/components/Banner";
+import { Clock } from "@/components/Clock";
+import { useReminders } from "@/hooks/useReminders";
+import type { Reminder } from "@/lib/reminders";
+import { loadBugCount, saveBugCount } from "@/lib/storage";
+import {
+  requestNotificationPermission,
+  sendNotification,
+} from "@/lib/notify";
 
 export default function Home() {
+  const duckRef = useRef<DuckHandle>(null);
+  const [banner, setBanner] = useState<BannerData | null>(null);
+  const bannerTimer = useRef<number | null>(null);
+  const [bugCount, setBugCount] = useState(0);
+
+  useEffect(() => {
+    setBugCount(loadBugCount());
+  }, []);
+
+  const showBanner = useCallback((emoji: string, label: string) => {
+    const data: BannerData = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      emoji,
+      label,
+    };
+    setBanner(data);
+    if (bannerTimer.current) window.clearTimeout(bannerTimer.current);
+    // Auto-dismiss after ~8s.
+    bannerTimer.current = window.setTimeout(() => setBanner(null), 8000);
+  }, []);
+
+  // When a reminder fires: duck quacks + animates, banner slides down,
+  // and (if allowed) a native notification goes out.
+  const handleFire = useCallback(
+    (r: Reminder) => {
+      duckRef.current?.react();
+      showBanner(r.emoji, r.label);
+      sendNotification(`🦆 ${r.emoji} ${r.label}`, "quack.");
+    },
+    [showBanner]
+  );
+
+  const { reminders, addReminder, toggleReminder, deleteReminder } =
+    useReminders({ onFire: handleFire });
+
+  // Lazily ask for notification permission on the first reminder added.
+  const handleAdd = useCallback(
+    (draft: Omit<Reminder, "id" | "enabled" | "lastFired">) => {
+      requestNotificationPermission();
+      addReminder(draft);
+    },
+    [addReminder]
+  );
+
+  // Rubber-duck debugging: the duck only ever replies `quack.`
+  const handleExplain = useCallback(() => {
+    duckRef.current?.react("quack.");
+    setBugCount((c) => {
+      const next = c + 1;
+      saveBugCount(next);
+      return next;
+    });
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <Banner banner={banner} onDismiss={() => setBanner(null)} />
+
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-6">
+        <div className="flex items-center gap-2">
+          <span className="text-3xl" aria-hidden>
+            🦆
+          </span>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+            ducki-duck
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Clock />
+      </header>
+
+      <main className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 items-start gap-8 px-5 py-8 lg:grid-cols-[1fr_minmax(360px,420px)]">
+        {/* Hero: the duck */}
+        <section className="flex flex-col items-center justify-center gap-4 lg:sticky lg:top-8">
+          <Duck ref={duckRef} />
+          <p className="max-w-xs text-center text-sm text-ink-soft">
+            Click the duck. That&apos;s it. That&apos;s the whole feature.
+          </p>
+        </section>
+
+        {/* Panels */}
+        <div className="flex flex-col gap-6">
+          <DebugPanel onExplain={handleExplain} bugCount={bugCount} />
+          <Agenda
+            reminders={reminders}
+            onAdd={handleAdd}
+            onToggle={toggleReminder}
+            onDelete={deleteReminder}
+          />
         </div>
       </main>
-    </div>
+
+      <footer className="mx-auto w-full max-w-5xl px-5 pb-6 text-center text-sm text-ink-soft">
+        It just quacks. Forever. By design.
+      </footer>
+    </>
   );
 }

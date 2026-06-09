@@ -1,0 +1,121 @@
+// ducki-duck desktop shell.
+//
+// The "pet" window is a small, transparent, frameless, always-on-top duck you
+// can drag anywhere. A system-tray menu lets you show/hide the duck, open the
+// full agenda window, toggle launch-at-login, and quit. The agenda window is
+// created on demand so the app stays a lightweight floating pet by default.
+
+use tauri::{
+    menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+
+/// Toggle the floating duck window's visibility.
+fn toggle_pet(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("pet") {
+        if win.is_visible().unwrap_or(false) {
+            let _ = win.hide();
+        } else {
+            let _ = win.show();
+            let _ = win.set_focus();
+        }
+    }
+}
+
+/// Open (or focus, if already open) the full agenda window.
+fn open_agenda(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("agenda") {
+        let _ = win.show();
+        let _ = win.set_focus();
+        return;
+    }
+    let _ = WebviewWindowBuilder::new(app, "agenda", WebviewUrl::App("index.html".into()))
+        .title("ducki-duck — agenda")
+        .inner_size(920.0, 760.0)
+        .min_inner_size(360.0, 480.0)
+        .build();
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .setup(|app| {
+            let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
+
+            let show_hide =
+                MenuItemBuilder::with_id("show_hide", "Show / hide duck").build(app)?;
+            let agenda = MenuItemBuilder::with_id("agenda", "Open agenda…").build(app)?;
+            let autostart = CheckMenuItemBuilder::with_id("autostart", "Launch at login")
+                .checked(autostart_on)
+                .build(app)?;
+            let quit = MenuItemBuilder::with_id("quit", "Quit ducki-duck").build(app)?;
+
+            let menu = MenuBuilder::new(app)
+                .item(&show_hide)
+                .item(&agenda)
+                .separator()
+                .item(&autostart)
+                .separator()
+                .item(&quit)
+                .build()?;
+
+            // Keep a handle to the check item so we can sync its tick.
+            let autostart_item = autostart.clone();
+
+            TrayIconBuilder::with_id("main")
+                .icon(app.default_window_icon().unwrap().clone())
+                .icon_as_template(true)
+                .tooltip("ducki-duck")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(move |app, event| match event.id.as_ref() {
+                    "show_hide" => toggle_pet(app),
+                    "agenda" => open_agenda(app),
+                    "autostart" => {
+                        let mgr = app.autolaunch();
+                        let now_enabled = if mgr.is_enabled().unwrap_or(false) {
+                            let _ = mgr.disable();
+                            false
+                        } else {
+                            let _ = mgr.enable();
+                            true
+                        };
+                        let _ = autostart_item.set_checked(now_enabled);
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    // Left-click the tray icon to toggle the duck quickly.
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        toggle_pet(tray.app_handle());
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Closing the floating duck just hides it (tray Quit exits the app).
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "pet" {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running ducki-duck");
+}

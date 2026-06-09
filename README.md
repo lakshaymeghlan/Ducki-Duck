@@ -82,15 +82,55 @@ src/
     ├── quack.ts          # Web Audio quack synth + quack variants
     ├── reminders.ts      # model + pure scheduling/firing logic
     ├── storage.ts        # localStorage load/save
-    └── notify.ts         # best-effort native notifications
+    ├── notify.ts         # platform-aware native notifications (web + Tauri)
+    └── platform.ts       # detect the Tauri desktop shell
+
+src/app/pet/page.tsx      # the floating desktop-pet window (just the duck)
+
+src-tauri/                # the Tauri desktop shell (Phase 2)
+├── src/lib.rs            # tray menu, window management, launch-at-login
+├── tauri.conf.json       # transparent/frameless/always-on-top duck window
+└── capabilities/         # window permissions
 ```
+
+## Desktop pet (Tauri)
+
+ducki-duck also runs as a tiny desktop companion via [Tauri](https://tauri.app)
+— a transparent, frameless, always-on-top duck you can **grab and drag anywhere
+on your screen**. It quacks and sends a native OS notification when a reminder
+fires, even when nothing is focused.
+
+- **Floating duck** — the main window is just the duck (transparent, no chrome).
+  Click it to quack; drag it to move it.
+- **System tray menu** — show/hide the duck, open the full agenda window, toggle
+  **launch at login**, and quit. Left-click the tray icon to toggle the duck.
+- **Native notifications** — reminders fire through the OS, handled by the
+  floating duck so it nudges you wherever it's sitting.
+- The floating duck owns the reminder loop; the agenda window only manages
+  reminders, so they never double-fire. Changes sync between windows live.
+
+### Prerequisites
+
+- [Rust](https://rustup.rs) (stable) and the platform toolchain Tauri needs —
+  see [Tauri prerequisites](https://tauri.app/start/prerequisites/). On macOS
+  that's the Xcode Command Line Tools (`xcode-select --install`).
+
+### Run & build
+
+```bash
+npm install
+npm run tauri:dev      # launch the floating duck in dev (hot reload)
+npm run tauri:build    # produce a native app bundle (.app/.dmg, .msi, etc.)
+```
+
+The Tauri config lives in [`src-tauri/`](src-tauri/) and the frontend is the
+exact same Next.js app (statically exported to `out/`). The web version keeps
+working standalone — `npm run dev` / `npm run build` are unaffected.
 
 ## Roadmap
 
-- **Phase 2 — desktop pet.** Wrap the app in [Tauri](https://tauri.app) for an
-  always-on-top, transparent, frameless floating duck, a system-tray menu,
-  native notifications even when unfocused, and launch-at-login. The web version
-  will keep working standalone.
+- Per-platform packaged releases (signed `.dmg` / `.msi`).
+- A "quack volume" setting and a few more duck moods.
 
 ## License
 

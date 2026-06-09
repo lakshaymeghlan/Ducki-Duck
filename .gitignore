@@ -42,3 +42,10 @@ next-env.d.ts
 
 # local agent config
 /.claude/
+
+# tauri
+/src-tauri/target/
+/src-tauri/gen/
+
+# next static export
+/out/

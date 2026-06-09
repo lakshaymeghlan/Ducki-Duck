@@ -26,17 +26,27 @@
   --shadow-duck: 0 24px 50px -16px rgba(30, 42, 56, 0.35);
 }
 
-html {
-  /* Subtle watery gradient backdrop */
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, transparent 60%),
-    linear-gradient(180deg, #eaf6fb 0%, #bfe3f0 55%, #a9d8ea 100%);
-  background-attachment: fixed;
+/* Transparent by default so the Tauri floating-duck window can be see-through.
+   The web app paints its own backdrop via .water-bg (below). */
+html,
+body {
+  background: transparent;
 }
 
 body {
   color: var(--color-ink);
   font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* Subtle watery gradient backdrop — used by the full web/agenda view only */
+.water-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, transparent 60%),
+    linear-gradient(180deg, #eaf6fb 0%, #bfe3f0 55%, #a9d8ea 100%);
 }
 
 h1,

@@ -3,7 +3,7 @@
 
 import type { Reminder } from "./reminders";
 
-const REMINDERS_KEY = "ducki-duck:reminders";
+export const REMINDERS_KEY = "ducki-duck:reminders";
 const BUGCOUNT_KEY = "ducki-duck:bug-count";
 
 export function loadReminders(): Reminder[] {

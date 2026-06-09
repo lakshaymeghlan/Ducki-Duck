@@ -26,6 +26,11 @@ export interface DuckHandle {
 interface DuckProps {
   /** Called after a click reaction (e.g. to count playful interactions). */
   onPet?: () => void;
+  /**
+   * In the Tauri desktop shell, make the duck a window drag-region so you can
+   * grab it and move the floating window anywhere. A plain click still quacks.
+   */
+  dragRegion?: boolean;
 }
 
 // The duck, drawn entirely in code — classic glossy rubber duck.
@@ -102,7 +107,7 @@ function DuckArt() {
 }
 
 export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
-  { onPet },
+  { onPet, dragRegion = false },
   ref
 ) {
   const reduceMotion = useReducedMotion();
@@ -209,6 +214,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
         type="button"
         onClick={handleClick}
         aria-label="Pet the duck — it quacks"
+        // The button itself is the drag-region target; inner content is
+        // pointer-events:none so a grab anywhere on the duck moves the window.
+        {...(dragRegion ? { "data-tauri-drag-region": true } : {})}
         className="group relative block rounded-full bg-transparent p-2 transition-transform active:scale-95"
       >
         {/* Outer element handles the squish-bounce (scale); the inner
@@ -218,7 +226,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
           ref={svgWrapRef}
           animate={controls}
           style={{ willChange: "transform" }}
-          className="w-56 h-52 sm:w-64 sm:h-60"
+          className={`w-56 h-52 sm:w-64 sm:h-60 ${
+            dragRegion ? "pointer-events-none" : ""
+          }`}
         >
           <IdleBob reduceMotion={!!reduceMotion}>
             <DuckArt />

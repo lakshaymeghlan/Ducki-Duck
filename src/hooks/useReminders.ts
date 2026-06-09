@@ -8,16 +8,22 @@ import {
   seedLastFired,
   shouldFire,
 } from "@/lib/reminders";
-import { loadReminders, saveReminders } from "@/lib/storage";
+import { loadReminders, REMINDERS_KEY, saveReminders } from "@/lib/storage";
 
 const TICK_MS = 5000;
 
 interface UseRemindersArgs {
   /** Called when a reminder fires, with the fired reminder. */
   onFire: (reminder: Reminder) => void;
+  /**
+   * Whether this window runs the firing loop. In Tauri the floating duck
+   * window fires; the agenda window only manages, so they don't double-fire.
+   * Defaults to true (the standalone web app is a single window).
+   */
+  fireEnabled?: boolean;
 }
 
-export function useReminders({ onFire }: UseRemindersArgs) {
+export function useReminders({ onFire, fireEnabled = true }: UseRemindersArgs) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -39,9 +45,19 @@ export function useReminders({ onFire }: UseRemindersArgs) {
     if (hydrated) saveReminders(reminders);
   }, [reminders, hydrated]);
 
+  // Keep windows in sync: when another window (e.g. the agenda window edits a
+  // reminder), reload from localStorage so the firing window sees the change.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === REMINDERS_KEY) setReminders(loadReminders());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // The single tick loop: every ~5s, check all enabled reminders.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !fireEnabled) return;
 
     const tick = () => {
       const now = new Date();
@@ -64,7 +80,7 @@ export function useReminders({ onFire }: UseRemindersArgs) {
       window.clearInterval(id);
       window.clearTimeout(warm);
     };
-  }, [hydrated]);
+  }, [hydrated, fireEnabled]);
 
   const addReminder = useCallback(
     (draft: Omit<Reminder, "id" | "enabled" | "lastFired">) => {

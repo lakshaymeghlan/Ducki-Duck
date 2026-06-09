@@ -13,6 +13,7 @@ import {
   requestNotificationPermission,
   sendNotification,
 } from "@/lib/notify";
+import { isTauri } from "@/lib/platform";
 
 export default function Home() {
   const duckRef = useRef<DuckHandle>(null);
@@ -47,8 +48,14 @@ export default function Home() {
     [showBanner]
   );
 
+  // In the Tauri desktop shell this is the agenda window; the floating duck
+  // window runs the firing loop, so we disable it here to avoid double-fires.
+  // Standalone web is a single window, so it fires normally.
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => setDesktop(isTauri()), []);
+
   const { reminders, addReminder, toggleReminder, deleteReminder } =
-    useReminders({ onFire: handleFire });
+    useReminders({ onFire: handleFire, fireEnabled: !desktop });
 
   // Lazily ask for notification permission on the first reminder added.
   const handleAdd = useCallback(
@@ -70,7 +77,7 @@ export default function Home() {
   }, []);
 
   return (
-    <>
+    <div className="water-bg flex min-h-screen flex-col">
       <Banner banner={banner} onDismiss={() => setBanner(null)} />
 
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-6">
@@ -109,6 +116,6 @@ export default function Home() {
       <footer className="mx-auto w-full max-w-5xl px-5 pb-6 text-center text-sm text-ink-soft">
         It just quacks. Forever. By design.
       </footer>
-    </>
+    </div>
   );
 }

@@ -11,9 +11,7 @@ import {
 import {
   AnimatePresence,
   motion,
-  type MotionValue,
   useAnimationControls,
-  useMotionValue,
   useReducedMotion,
   useSpring,
 } from "framer-motion";
@@ -27,132 +25,74 @@ export interface DuckHandle {
 }
 
 interface DuckProps {
-  /** 1 = facing right, -1 = facing left (the duck flips to face travel). */
+  /** 1 = facing right, -1 = facing left (flips to face travel direction). */
   facing?: number;
-  /** Whether the duck is currently walking (drives the waddle + feet). */
+  /** Whether the duck is walking (drives the waddle + feet). */
   walking?: boolean;
   /** Notifies the parent so the walker can pause while you pet the duck. */
   onHoverChange?: (hovered: boolean) => void;
   onPet?: () => void;
 }
 
-// An original, chunky-cute rubber duck: big round head, two large sparkly eyes
-// with trackable pupils, tiny orange beak, chubby cheeks, a little wing + feet.
-function CuteDuckArt({
-  pupilX,
-  pupilY,
-  happy,
-  walking,
-}: {
-  pupilX: MotionValue<number>;
-  pupilY: MotionValue<number>;
-  happy: boolean;
-  walking: boolean;
-}) {
+// A simple pixel rubber duck (side view, facing right). Flat colors, crisp
+// edges — one char per pixel.  Y body · w wing · O beak · b beak underside ·
+// K eye · f foot
+const PIXELS = [
+  "................",
+  "................",
+  ".......YYYY.....",
+  "......YYYYYY....",
+  "......YYKKYY....",
+  "......YYYYYYOOO.",
+  "......YYYYYYbbO.",
+  "....YYYYYYYYY...",
+  "..YYYYYYYYYYYY..",
+  ".YYYYYYYYYYYYYY.",
+  ".YYYYYYwwwYYYYY.",
+  ".YYYYYYwwwYYYYY.",
+  "..YYYYYYYYYYYY..",
+  "...YYYYYYYYYY...",
+  "....ff....ff....",
+  "................",
+];
+
+const COLOR: Record<string, string> = {
+  Y: "#FFD23F",
+  w: "#F2B100",
+  O: "#FF9E3D",
+  b: "#E07A14",
+  K: "#23303A",
+  f: "#F58A1F",
+};
+
+function pixels(only?: (ch: string) => boolean) {
+  const rects: React.ReactElement[] = [];
+  PIXELS.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x];
+      if (!COLOR[ch]) continue;
+      if (only ? !only(ch) : ch === "K") continue;
+      rects.push(
+        <rect key={`${x}-${y}`} x={x} y={y} width="1.02" height="1.02" fill={COLOR[ch]} />
+      );
+    }
+  });
+  return rects;
+}
+
+function PixelDuckArt({ walking }: { walking: boolean }) {
   return (
     <svg
-      className={`duck-svg h-full w-full overflow-visible ${
-        walking ? "walking" : ""
-      }`}
-      viewBox="0 0 100 100"
+      className={`duck-svg h-full w-full overflow-visible ${walking ? "walking" : ""}`}
+      viewBox="0 0 16 16"
       xmlns="http://www.w3.org/2000/svg"
+      shapeRendering="crispEdges"
       role="img"
-      aria-label="A cute rubber duck"
+      aria-label="A simple pixel rubber duck"
     >
-      <defs>
-        <radialGradient id="duckBody" cx="38%" cy="30%" r="78%">
-          <stop offset="0%" stopColor="#FFEFAE" />
-          <stop offset="55%" stopColor="#FFD23F" />
-          <stop offset="100%" stopColor="#F3B100" />
-        </radialGradient>
-        <radialGradient id="duckHead" cx="36%" cy="28%" r="80%">
-          <stop offset="0%" stopColor="#FFF3C0" />
-          <stop offset="60%" stopColor="#FFD752" />
-          <stop offset="100%" stopColor="#F6BC18" />
-        </radialGradient>
-        <linearGradient id="duckBeak" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFB347" />
-          <stop offset="100%" stopColor="#F58A1F" />
-        </linearGradient>
-      </defs>
-
-      {/* Feet */}
-      <g className="duck-foot duck-foot-l">
-        <ellipse cx="42" cy="92" rx="7" ry="4" fill="#F58A1F" />
-      </g>
-      <g className="duck-foot duck-foot-r">
-        <ellipse cx="58" cy="92" rx="7" ry="4" fill="#F58A1F" />
-      </g>
-
-      {/* Tail */}
-      <path d="M14 62 q-8 -6 -2 -12 q6 2 9 8 z" fill="#F3B100" />
-
-      {/* Body */}
-      <ellipse cx="50" cy="66" rx="33" ry="25" fill="url(#duckBody)" />
-
-      {/* Wing */}
-      <path
-        className="duck-wing"
-        d="M34 58 q-9 6 -3 18 q8 2 12 -4 q-3 -10 -9 -14 z"
-        fill="#F7C521"
-      />
-
-      {/* Head */}
-      <circle cx="60" cy="38" r="24" fill="url(#duckHead)" />
-
-      {/* Cheeks (blush) */}
-      <ellipse
-        cx="50"
-        cy="46"
-        rx="5.5"
-        ry="3.6"
-        fill="#FF9AA0"
-        opacity={happy ? 0.8 : 0.5}
-      />
-      <ellipse
-        cx="74"
-        cy="46"
-        rx="5.5"
-        ry="3.6"
-        fill="#FF9AA0"
-        opacity={happy ? 0.8 : 0.5}
-      />
-
-      {/* Beak */}
-      <path
-        d="M76 38 q14 -3 17 5 q-1 3 -5 3 q-8 1 -12 -3 z"
-        fill="url(#duckBeak)"
-      />
-      <g className="bill-bottom">
-        <path d="M76 44 q8 4 13 2 q-2 4 -8 4 q-4 0 -5 -3 z" fill="#E07A14" />
-      </g>
-
-      {/* Eyes — pupils track the cursor; whole group squashes to blink */}
-      <g className="duck-eye">
-        <circle cx="54" cy="34" r="8.5" fill="#FFFFFF" />
-        <circle cx="72" cy="34" r="8.5" fill="#FFFFFF" />
-        <motion.g style={{ x: pupilX, y: pupilY }}>
-          <circle cx="54" cy="34" r="4.6" fill="#23303A" />
-          <circle cx="72" cy="34" r="4.6" fill="#23303A" />
-          <circle cx="55.6" cy="32" r="1.5" fill="#FFFFFF" />
-          <circle cx="73.6" cy="32" r="1.5" fill="#FFFFFF" />
-        </motion.g>
-        {/* Happy squint lids fade in when happy */}
-        <g
-          style={{ opacity: happy ? 1 : 0, transition: "opacity 120ms" }}
-          stroke="#23303A"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          fill="none"
-        >
-          <path d="M48 35 q6 -6 12 0" />
-          <path d="M66 35 q6 -6 12 0" />
-        </g>
-      </g>
-
-      {/* Glossy highlights */}
-      <ellipse cx="48" cy="28" rx="9" ry="5" fill="#FFFFFF" opacity="0.45" />
-      <ellipse cx="36" cy="58" rx="10" ry="5" fill="#FFFFFF" opacity="0.3" />
+      {pixels()}
+      {/* Eye — squashes to blink (CSS .blinking) */}
+      <g className="duck-eye">{pixels((ch) => ch === "K")}</g>
     </svg>
   );
 }
@@ -173,10 +113,6 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   const controls = useAnimationControls();
   const svgWrapRef = useRef<HTMLDivElement>(null);
 
-  // Pupil + head tracking (springs = smooth, no re-renders).
-  const pupilX = useSpring(0, { stiffness: 220, damping: 18 });
-  const pupilY = useSpring(0, { stiffness: 220, damping: 18 });
-  const headTilt = useSpring(0, { stiffness: 180, damping: 16 });
   const facingMV = useSpring(facing, { stiffness: 260, damping: 22 });
   useEffect(() => {
     facingMV.set(facing);
@@ -184,9 +120,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
 
   const [happy, setHappy] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [bubble, setBubble] = useState<{ text: string; key: number } | null>(
-    null
-  );
+  const [bubble, setBubble] = useState<{ text: string; key: number } | null>(null);
   const [hearts, setHearts] = useState<Heart[]>([]);
   const bubbleTimer = useRef<number | null>(null);
   const bubbleKey = useRef(0);
@@ -194,15 +128,13 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   const heartId = useRef(0);
   const loveyTimer = useRef<number | null>(null);
 
-  const cursor = useRef({ x: 0, y: 0, has: false });
-
   // Periodic blink — faster while happy.
   useEffect(() => {
     if (reduceMotion) return;
     let blinkTimeout: number;
     let clearId: number;
     const schedule = () => {
-      const delay = (happy ? 1200 : 2800) + Math.random() * (happy ? 1200 : 3200);
+      const delay = (happy ? 1100 : 2800) + Math.random() * (happy ? 1100 : 3200);
       blinkTimeout = window.setTimeout(() => {
         const eye = svgWrapRef.current?.querySelector(".duck-eye");
         if (eye) {
@@ -218,28 +150,6 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       window.clearTimeout(clearId);
     };
   }, [reduceMotion, happy]);
-
-  // Cursor tracking: aim pupils + tilt head toward the pointer.
-  useEffect(() => {
-    if (reduceMotion) return;
-    const onMove = (e: MouseEvent) => {
-      cursor.current = { x: e.clientX, y: e.clientY, has: true };
-      const rect = svgWrapRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy) || 1;
-      const sign = facing < 0 ? -1 : 1;
-      // Clamp pupil travel (SVG units) so it never looks creepy.
-      pupilX.set(sign * Math.max(-3.2, Math.min(3.2, (dx / dist) * 3.2)));
-      pupilY.set(Math.max(-2.6, Math.min(2.6, (dy / dist) * 2.6)));
-      headTilt.set(Math.max(-7, Math.min(7, (dx / 40) * 7)) * sign);
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, [reduceMotion, facing, pupilX, pupilY, headTilt]);
 
   const say = useCallback((line: string) => {
     bubbleKey.current += 1;
@@ -299,25 +209,18 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
     onHoverChange?.(true);
     if (reduceMotion) return;
     setHappy(true);
-    controls.start({ y: [-0, -6, 0], transition: { duration: 0.4 } });
+    controls.start({ y: [0, -6, 0], transition: { duration: 0.4 } });
     spawnHeart();
     heartTimer.current = window.setInterval(spawnHeart, 520);
-    // After a couple seconds of attention, the duck gets lovey.
     loveyTimer.current = window.setTimeout(() => {
       say("quack ❤️");
-      controls.start({
-        rotate: [0, -5, 5, -3, 0],
-        transition: { duration: 0.6 },
-      });
+      controls.start({ rotate: [0, -5, 5, -3, 0], transition: { duration: 0.6 } });
     }, 2500);
   };
   const handleLeave = () => {
     setHovered(false);
     onHoverChange?.(false);
     setHappy(false);
-    pupilX.set(0);
-    pupilY.set(0);
-    headTilt.set(0);
     if (heartTimer.current) window.clearInterval(heartTimer.current);
     if (loveyTimer.current) window.clearTimeout(loveyTimer.current);
     heartTimer.current = null;
@@ -338,8 +241,8 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
 
   const heartPos: Record<Heart["origin"], string> = {
     top: "left-1/2 top-0 -translate-x-1/2",
-    left: "left-2 top-1/3",
-    right: "right-2 top-1/3",
+    left: "left-1 top-1/3",
+    right: "right-1 top-1/3",
   };
 
   return (
@@ -371,7 +274,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
               key={h.id}
               className={`absolute ${heartPos[h.origin]}`}
               initial={{ y: 6, opacity: 0, scale: 0.4 }}
-              animate={{ y: -64, x: h.drift, opacity: [0, 1, 1, 0], scale: 1 }}
+              animate={{ y: -60, x: h.drift, opacity: [0, 1, 1, 0], scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: h.dur, ease: "easeOut" }}
             >
@@ -388,20 +291,12 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
         onMouseLeave={handleLeave}
         aria-label="Pet the duck — it quacks"
         className="group relative block rounded-full bg-transparent p-1"
-        style={{ perspective: 500 }}
       >
-        {/* facing flip → squish/bounce → walk waddle → head tilt → art */}
+        {/* facing flip → squish/bounce → walk waddle → art */}
         <motion.div style={{ scaleX: facingMV }}>
           <motion.div ref={svgWrapRef} animate={controls}>
             <WalkBob walking={walking && !hovered} reduceMotion={!!reduceMotion}>
-              <motion.div style={{ rotate: headTilt }} className="h-full w-full">
-                <CuteDuckArt
-                  pupilX={pupilX}
-                  pupilY={pupilY}
-                  happy={happy}
-                  walking={walking && !hovered}
-                />
-              </motion.div>
+              <PixelDuckArt walking={walking && !hovered} />
             </WalkBob>
           </motion.div>
         </motion.div>
@@ -410,7 +305,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       {/* Soft contact shadow */}
       <motion.div
         aria-hidden
-        className="mt-0.5 h-2 w-24 rounded-[100%] bg-ink/25 blur-md"
+        className="mt-0.5 h-2 w-20 rounded-[100%] bg-ink/25 blur-md"
         {...(!reduceMotion && {
           animate: { scaleX: [1, 0.9, 1], opacity: [0.28, 0.2, 0.28] },
           transition: { duration: 3.5, repeat: Infinity, ease: "easeInOut" },
@@ -420,7 +315,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   );
 });
 
-// Walk waddle (or gentle idle bob when standing). Reduced-motion: static.
+// Walk waddle (or gentle idle bob when standing). Reduced motion: static.
 function WalkBob({
   children,
   walking,
@@ -431,14 +326,12 @@ function WalkBob({
   reduceMotion: boolean;
 }) {
   if (reduceMotion)
-    return <div className="h-36 w-36 sm:h-40 sm:w-40">{children}</div>;
+    return <div className="h-32 w-32 sm:h-36 sm:w-36">{children}</div>;
   return (
     <motion.div
-      className="h-36 w-36 drop-shadow-[var(--shadow-duck)] sm:h-40 sm:w-40"
+      className="h-32 w-32 drop-shadow-[var(--shadow-duck)] sm:h-36 sm:w-36"
       animate={
-        walking
-          ? { y: [0, -3, 0, -3, 0], rotate: [-3, 3, -3] }
-          : { y: [0, -6, 0] }
+        walking ? { y: [0, -3, 0, -3, 0], rotate: [-3, 3, -3] } : { y: [0, -6, 0] }
       }
       transition={{
         duration: walking ? 0.6 : 3.4,

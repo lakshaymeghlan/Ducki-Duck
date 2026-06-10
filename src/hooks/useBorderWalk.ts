@@ -45,9 +45,11 @@ export function useBorderWalk({ mode, paused, size = 150, reduceMotion }: Args) 
   const [walking, setWalking] = useState(false);
 
   // Mutable bits the rAF loop reads without re-subscribing.
-  const dist = useRef(Math.random() * 400);
+  const dist = useRef(0);
   const pausedRef = useRef(paused);
-  pausedRef.current = paused;
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
   const idleUntil = useRef(0);
   const facingRef = useRef(1);
 

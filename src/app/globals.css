@@ -85,12 +85,35 @@ h3 {
   transform: scaleY(0.08);
 }
 
-/* Lower beak drops open when the duck quacks (pixel grid, 16-unit space) */
+/* Lower beak drops open when the duck quacks (100-unit viewBox) */
 .bill-bottom {
-  transition: transform 120ms ease-out;
+  transform-box: fill-box;
+  transform-origin: top center;
+  transition: transform 110ms ease-out;
 }
 .duck-svg.reacting .bill-bottom {
-  transform: translateY(5px);
+  transform: translateY(2.5px) scaleY(1.3);
+}
+
+/* Little feet waddle while the duck is walking */
+.duck-foot {
+  transform-box: fill-box;
+  transform-origin: top center;
+}
+.duck-svg.walking .duck-foot-l {
+  animation: duck-step 0.42s ease-in-out infinite;
+}
+.duck-svg.walking .duck-foot-r {
+  animation: duck-step 0.42s ease-in-out infinite 0.21s;
+}
+@keyframes duck-step {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(-8deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

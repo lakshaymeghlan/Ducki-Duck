@@ -50,8 +50,14 @@ export default function Pet() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
-      {/* Sticky duck: pinned in place (no drag), always on top, all spaces. */}
-      <DuckScene ref={duckRef} layEnabled onRequestAgenda={openAgenda} />
+      {/* The duck walks the screen border (moves its own window) and is always
+          on top across spaces. Hover it to make it stop + get happy. */}
+      <DuckScene
+        ref={duckRef}
+        layEnabled
+        walkMode="screen"
+        onRequestAgenda={openAgenda}
+      />
     </div>
   );
 }

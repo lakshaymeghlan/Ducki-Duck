@@ -93,18 +93,20 @@ export default function Home() {
         <Clock />
       </header>
 
-      <main className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 items-start gap-8 px-5 py-8 lg:grid-cols-[1fr_minmax(360px,420px)]">
-        {/* Hero: the duck */}
-        <section className="flex flex-col items-center justify-center gap-4 lg:sticky lg:top-8">
-          <DuckScene
-            ref={duckRef}
-            layEnabled={!desktop}
-            onAddReminder={handleAdd}
-          />
-          <p className="max-w-xs text-center text-sm text-ink-soft">
-            Click to quack · right-click for reminders · it lays eggs you can pop.
-          </p>
-        </section>
+      {/* The duck walks the window's border as a fixed companion. Hover it to
+          stop it, make it happy, and float hearts. */}
+      <DuckScene
+        ref={duckRef}
+        layEnabled={!desktop}
+        walkMode="window"
+        onAddReminder={handleAdd}
+      />
+
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-5 py-8">
+        <p className="text-center text-sm text-ink-soft">
+          A little duck waddles around the edge of the window. Click it to quack,
+          right-click it for reminders, and pop the eggs it leaves behind.
+        </p>
 
         {/* Panels */}
         <div className="flex flex-col gap-6">

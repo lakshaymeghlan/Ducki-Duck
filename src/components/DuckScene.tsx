@@ -6,9 +6,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Duck, type DuckHandle } from "./Duck";
 import { useEggs } from "@/hooks/useEggs";
+import { useBorderWalk, type WalkMode } from "@/hooks/useBorderWalk";
 import {
   defaultEmoji,
   type Reminder,
@@ -20,8 +21,11 @@ type ReminderDraft = Omit<Reminder, "id" | "enabled" | "lastFired">;
 interface DuckSceneProps {
   /** Whether this window lays eggs (only the primary window should). */
   layEnabled?: boolean;
-  /** Tauri floating window: make the duck a drag-region. */
-  dragRegion?: boolean;
+  /**
+   * Border-walking mode: "window" walks the viewport edge (web overlay),
+   * "screen" walks the screen edge by moving the Tauri window, "off" stays put.
+   */
+  walkMode?: WalkMode;
   /** Add a reminder (used by the quick-add popover). */
   onAddReminder?: (draft: ReminderDraft) => void;
   /**
@@ -64,11 +68,21 @@ function EggIcon() {
 
 export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
   function DuckScene(
-    { layEnabled = true, dragRegion = false, onAddReminder, onRequestAgenda },
+    { layEnabled = true, walkMode = "off", onAddReminder, onRequestAgenda },
     ref
   ) {
     const duckRef = useRef<DuckHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const reduceMotion = useReducedMotion();
+
+    // Walk the border; pause while the user is petting the duck.
+    const [hovered, setHovered] = useState(false);
+    const { x, y, facing, walking } = useBorderWalk({
+      mode: walkMode,
+      paused: hovered,
+      reduceMotion: !!reduceMotion,
+    });
+    const isWindowWalk = walkMode === "window";
 
     useImperativeHandle(
       ref,
@@ -130,12 +144,22 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
     };
 
     return (
-      <div
+      <motion.div
         ref={containerRef}
-        className="relative flex flex-col items-center"
+        className={
+          isWindowWalk
+            ? "fixed left-0 top-0 z-50 flex flex-col items-center"
+            : "relative flex flex-col items-center"
+        }
+        style={isWindowWalk ? { x, y } : undefined}
         onContextMenu={openMenuAt}
       >
-        <Duck ref={duckRef} dragRegion={dragRegion} />
+        <Duck
+          ref={duckRef}
+          facing={facing}
+          walking={walking}
+          onHoverChange={setHovered}
+        />
 
         {/* Eggs the duck has laid — click to pop */}
         {eggs.length > 0 && (
@@ -229,7 +253,7 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
             />
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     );
   }
 );

@@ -22,7 +22,12 @@ tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# macOS: raw NSWindow access so the duck can float across every Space and
-# over fullscreen apps (Tauri's helpers don't set the full collection behavior).
+# macOS native bits:
+#  - objc: NSWindow collection behavior (float across Spaces / over fullscreen)
+#  - core-graphics: global cursor position (so the dog's eyes track anywhere)
+#  - rdev: global key-event *timing* for the typing companion (counts only —
+#    never records which keys; needs Input Monitoring permission)
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
+core-graphics = "0.24"
+rdev = "0.5"

@@ -8,9 +8,27 @@
 use tauri::{
     menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+
+/// Global cursor position in screen points (top-left origin). Lets the dog's
+/// eyes track the pointer anywhere on screen, not just over its own window.
+#[tauri::command]
+fn global_cursor() -> (f64, f64) {
+    #[cfg(target_os = "macos")]
+    {
+        use core_graphics::event::CGEvent;
+        use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+        if let Ok(src) = CGEventSource::new(CGEventSourceStateID::CombinedSessionState) {
+            if let Ok(ev) = CGEvent::new(src) {
+                let p = ev.location();
+                return (p.x, p.y);
+            }
+        }
+    }
+    (0.0, 0.0)
+}
 
 /// macOS: pin a window so it floats on every Space and stays visible over
 /// fullscreen apps. Sets the NSWindow collection behavior + a high level,
@@ -91,16 +109,31 @@ pub fn run() {
         ))
         // Remember where the user dropped the dog between launches.
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .invoke_handler(tauri::generate_handler![global_cursor])
         .setup(|app| {
-            // Make the duck sticky: pinned to a fixed corner, visible on every
-            // desktop/space and above other windows — including fullscreen apps
-            // — so it stays in one place no matter what you switch to.
+            // Pinned + visible on every Space and above fullscreen apps.
             if let Some(pet) = app.get_webview_window("pet") {
                 let _ = pet.set_visible_on_all_workspaces(true);
                 let _ = pet.set_always_on_top(true);
                 #[cfg(target_os = "macos")]
                 pin_over_everything(&pet);
                 pin_to_corner(&pet);
+            }
+
+            // Global keystroke *timing* for the typing companion: emit an event
+            // on each key press. We never inspect or store which key it is — only
+            // that a key was pressed and when. Needs macOS Input Monitoring
+            // permission; without it this silently receives nothing.
+            #[cfg(target_os = "macos")]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    let _ = rdev::listen(move |event| {
+                        if matches!(event.event_type, rdev::EventType::KeyPress(_)) {
+                            let _ = handle.emit("global-keypress", ());
+                        }
+                    });
+                });
             }
 
             let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);

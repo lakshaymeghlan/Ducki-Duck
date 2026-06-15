@@ -1,22 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isTauri } from "@/lib/platform";
 
-// Detects typing in the focused window. NOTE: a webview/desktop-pet window only
-// receives key events while it's focused — it can't see keystrokes you make in
-// other apps (that would need OS-level global key hooks). So this reacts when
-// you type in the app/agenda window.
+// Detects typing and its speed. On the web it listens to the focused window's
+// keydown. On the desktop it listens to a global key-press event emitted by the
+// Rust side (timing only — never which keys), so the floating dog reacts to you
+// typing in ANY app (requires macOS Input Monitoring permission).
 export function useTyping() {
   const [typing, setTyping] = useState(false);
-  const [rate, setRate] = useState(0); // keystrokes in the last second
-  const [tick, setTick] = useState(0); // increments per keystroke (key flashes)
+  const [rate, setRate] = useState(0); // key presses in the last second
+  const [tick, setTick] = useState(0); // increments per press (key flashes)
   const times = useRef<number[]>([]);
   const stop = useRef<number | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Only count "real" typing keys (letters, numbers, space, punctuation).
-      if (e.key.length !== 1 && e.key !== "Backspace" && e.key !== "Enter") return;
+    const register = () => {
       const now = performance.now();
       times.current.push(now);
       times.current = times.current.filter((t) => now - t < 1000);
@@ -29,6 +28,29 @@ export function useTyping() {
         setRate(0);
         times.current = [];
       }, 2000);
+    };
+
+    // Desktop: global key presses from Rust.
+    if (isTauri()) {
+      let unlisten: (() => void) | undefined;
+      let alive = true;
+      import("@tauri-apps/api/event").then(({ listen }) => {
+        listen("global-keypress", () => register()).then((un) => {
+          if (alive) unlisten = un;
+          else un();
+        });
+      });
+      return () => {
+        alive = false;
+        unlisten?.();
+        if (stop.current) window.clearTimeout(stop.current);
+      };
+    }
+
+    // Web: focused-window typing.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.length !== 1 && e.key !== "Backspace" && e.key !== "Enter") return;
+      register();
     };
     window.addEventListener("keydown", onKey);
     return () => {

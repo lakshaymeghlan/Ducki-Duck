@@ -17,6 +17,7 @@ import {
   useSpring,
 } from "framer-motion";
 import { bark, randomBarkVariant, unlockAudio } from "@/lib/bark";
+import { isTauri } from "@/lib/platform";
 
 export interface DuckHandle {
   /** Woof + squish-bounce, and optionally show a specific line. */
@@ -258,19 +259,74 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   // Cursor tracking: pupils follow the pointer; movement wakes the dog.
   useEffect(() => {
     armIdle();
+    const aim = (dx: number, dy: number) => {
+      const dist = Math.hypot(dx, dy) || 1;
+      pupilX.set(Math.max(-0.65, Math.min(0.65, (dx / dist) * 0.65)));
+      pupilY.set(Math.max(-0.5, Math.min(0.5, (dy / dist) * 0.5)));
+    };
+
+    // Desktop: poll the global cursor so the eyes track anywhere on screen.
+    if (isTauri()) {
+      let alive = true;
+      let timer = 0;
+      let geom: { cx: number; cy: number } | null = null;
+      let last = { x: -1, y: -1 };
+      (async () => {
+        const [{ invoke }, { getCurrentWindow }] = await Promise.all([
+          import("@tauri-apps/api/core"),
+          import("@tauri-apps/api/window"),
+        ]);
+        const win = getCurrentWindow();
+        const refresh = async () => {
+          try {
+            const p = await win.outerPosition();
+            const s = await win.outerSize();
+            const scale = await win.scaleFactor();
+            geom = {
+              cx: p.x / scale + s.width / scale / 2,
+              cy: p.y / scale + s.height / scale / 2,
+            };
+          } catch {
+            /* ignore */
+          }
+        };
+        await refresh();
+        let count = 0;
+        const tick = async () => {
+          if (!alive) return;
+          try {
+            const [cx, cy] = (await invoke("global_cursor")) as [number, number];
+            if (count++ % 12 === 0) await refresh(); // window may have been dragged
+            if (geom) {
+              if (!reduceMotion) aim(cx - geom.cx, cy - geom.cy);
+              if (Math.abs(cx - last.x) + Math.abs(cy - last.y) > 2) {
+                last = { x: cx, y: cy };
+                if (sleepingRef.current) setSleep(false);
+                armIdle();
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+          timer = window.setTimeout(tick, 90);
+        };
+        tick();
+      })();
+      return () => {
+        alive = false;
+        if (timer) window.clearTimeout(timer);
+        if (idleTimer.current) window.clearTimeout(idleTimer.current);
+      };
+    }
+
+    // Web: track the pointer within the page.
     const onMove = (e: MouseEvent) => {
       if (sleepingRef.current) setSleep(false);
       armIdle();
       if (reduceMotion) return;
       const rect = svgWrapRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy) || 1;
-      pupilX.set(Math.max(-0.65, Math.min(0.65, (dx / dist) * 0.65)));
-      pupilY.set(Math.max(-0.5, Math.min(0.5, (dy / dist) * 0.5)));
+      aim(e.clientX - (rect.left + rect.width / 2), e.clientY - (rect.top + rect.height / 2));
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => {

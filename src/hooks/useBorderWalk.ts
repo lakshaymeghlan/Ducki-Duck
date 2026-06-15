@@ -38,7 +38,7 @@ function perimeterPoint(
   return { x: left, y: top + H - t, facing: 1 };
 }
 
-export function useBorderWalk({ mode, paused, size = 150, reduceMotion }: Args) {
+export function useBorderWalk({ mode, paused, size = 112, reduceMotion }: Args) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const [facing, setFacing] = useState(1);

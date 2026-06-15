@@ -61,13 +61,14 @@ const PIXELS = [
   "................",
 ];
 
+// Cozy, soft pastel palette — warm tan + gentle browns, soft coral tongue.
 const COLOR: Record<string, string> = {
-  B: "#BC824A", // brown body
-  D: "#6E4A2B", // dark-brown ears / patches
-  W: "#FFFFFF", // white face / chest / paws
-  K: "#1E2630", // nose
-  R: "#D9342B", // tongue
-  E: "#FFFFFF", // eye white
+  B: "#D6A871", // warm soft tan body
+  D: "#9A6E45", // gentle brown ears / patches
+  W: "#FFFDF7", // warm white face / chest / paws
+  K: "#4A382E", // warm dark nose
+  R: "#EC8377", // soft coral tongue
+  E: "#FFFDF7", // eye white
 };
 
 function pixels(only?: (ch: string) => boolean) {
@@ -118,10 +119,10 @@ function PixelDogArt({
           <>
             {pixels((ch) => ch === "E")}
             <motion.g style={{ x: pupilX, y: pupilY }}>
-              <rect x="4.2" y="5.1" width="1.5" height="1.6" fill="#1E2630" />
-              <rect x="10.2" y="5.1" width="1.5" height="1.6" fill="#1E2630" />
-              <rect x="4.4" y="5.2" width="0.5" height="0.5" fill="#FFFFFF" />
-              <rect x="10.4" y="5.2" width="0.5" height="0.5" fill="#FFFFFF" />
+              <rect x="4.2" y="5.1" width="1.5" height="1.6" fill="#4A382E" />
+              <rect x="10.2" y="5.1" width="1.5" height="1.6" fill="#4A382E" />
+              <rect x="4.4" y="5.2" width="0.5" height="0.5" fill="#FFFDF7" />
+              <rect x="10.4" y="5.2" width="0.5" height="0.5" fill="#FFFDF7" />
             </motion.g>
           </>
         )}
@@ -455,7 +456,7 @@ function WalkBob({
   reduceMotion: boolean;
 }) {
   if (reduceMotion)
-    return <div className="h-32 w-32 sm:h-36 sm:w-36">{children}</div>;
+    return <div className="h-24 w-24 sm:h-28 sm:w-28">{children}</div>;
   return (
     <motion.div
       className="h-32 w-32 drop-shadow-[var(--shadow-duck)] sm:h-36 sm:w-36"

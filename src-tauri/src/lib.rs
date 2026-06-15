@@ -75,7 +75,7 @@ fn open_agenda(app: &tauri::AppHandle) {
         return;
     }
     let _ = WebviewWindowBuilder::new(app, "agenda", WebviewUrl::App("index.html".into()))
-        .title("ducki-duck — agenda")
+        .title("doggy-dog — agenda")
         .inner_size(920.0, 760.0)
         .min_inner_size(360.0, 480.0)
         .build();
@@ -89,6 +89,8 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             None,
         ))
+        // Remember where the user dropped the dog between launches.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
             // Make the duck sticky: pinned to a fixed corner, visible on every
             // desktop/space and above other windows — including fullscreen apps

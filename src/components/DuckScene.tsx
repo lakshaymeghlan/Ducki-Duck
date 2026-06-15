@@ -8,8 +8,10 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Duck, type DuckHandle } from "./Duck";
+import { PixelKeyboard } from "./PixelKeyboard";
 import { useEggs } from "@/hooks/useEggs";
-import { useBorderWalk, type WalkMode } from "@/hooks/useBorderWalk";
+import { useWebDrag } from "@/hooks/useWebDrag";
+import { useTyping } from "@/hooks/useTyping";
 import {
   defaultEmoji,
   type Reminder,
@@ -17,15 +19,16 @@ import {
 } from "@/lib/reminders";
 
 type ReminderDraft = Omit<Reminder, "id" | "enabled" | "lastFired">;
+export type PetMode = "window" | "screen" | "off";
 
 interface DuckSceneProps {
   /** Whether this window lays eggs (only the primary window should). */
   layEnabled?: boolean;
   /**
-   * Border-walking mode: "window" walks the viewport edge (web overlay),
-   * "screen" walks the screen edge by moving the Tauri window, "off" stays put.
+   * Placement: "window" = draggable fixed overlay on the web page, "screen" =
+   * draggable Tauri window (desktop). The pet never moves on its own.
    */
-  walkMode?: WalkMode;
+  walkMode?: PetMode;
   /** Add a reminder (used by the quick-add popover). */
   onAddReminder?: (draft: ReminderDraft) => void;
   /**
@@ -75,15 +78,12 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const reduceMotion = useReducedMotion();
 
-    // Walk the border; pause while the user is petting the dog or it's asleep.
-    const [hovered, setHovered] = useState(false);
-    const [sleeping, setSleeping] = useState(false);
-    const { x, y, facing, walking } = useBorderWalk({
-      mode: walkMode,
-      paused: hovered || sleeping,
-      reduceMotion: !!reduceMotion,
-    });
-    const isWindowWalk = walkMode === "window";
+    const [, setHovered] = useState(false);
+    const [, setSleeping] = useState(false);
+    const isWindow = walkMode === "window"; // draggable web overlay
+    const isScreen = walkMode === "screen"; // draggable desktop window
+    const { x, y, onPointerDown, moved } = useWebDrag(isWindow);
+    const { typing, tick, excited } = useTyping();
 
     useImperativeHandle(
       ref,
@@ -148,20 +148,36 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
       <motion.div
         ref={containerRef}
         className={
-          isWindowWalk
+          isWindow
             ? "fixed left-0 top-0 z-50 flex flex-col items-center"
             : "relative flex flex-col items-center"
         }
-        style={isWindowWalk ? { x, y } : undefined}
+        style={isWindow ? { x, y } : undefined}
+        onPointerDown={isWindow ? onPointerDown : undefined}
+        // Suppress the click→woof if the gesture was actually a drag.
+        onClickCapture={(e) => {
+          if (moved.current) {
+            e.stopPropagation();
+            moved.current = false;
+          }
+        }}
         onContextMenu={openMenuAt}
       >
         <Duck
           ref={duckRef}
-          facing={facing}
-          walking={walking}
+          dragRegion={isScreen}
+          typing={typing}
+          excited={excited}
           onHoverChange={setHovered}
           onSleepingChange={setSleeping}
         />
+
+        {/* Pixel keyboard while typing (focused window only) */}
+        <div className="pointer-events-none absolute -bottom-2 left-1/2 z-20 -translate-x-1/2">
+          <AnimatePresence>
+            {typing && <PixelKeyboard key="kb" tick={tick} excited={excited} />}
+          </AnimatePresence>
+        </div>
 
         {/* Eggs the duck has laid — click to pop */}
         {eggs.length > 0 && (

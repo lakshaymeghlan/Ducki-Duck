@@ -26,31 +26,31 @@ export interface DuckHandle {
 }
 
 interface DuckProps {
-  /** 1 = facing right, -1 = facing left (flips to face travel direction). */
-  facing?: number;
-  /** Whether the dog is walking (drives the waddle). */
-  walking?: boolean;
-  /** Notifies the parent so the walker can pause while you pet the dog. */
+  /** Tauri desktop: make the dog a window drag-region (drag to move window). */
+  dragRegion?: boolean;
+  /** User is typing in the focused window → typing bounce. */
+  typing?: boolean;
+  /** Heavy typing → faster, excited bounce + occasional hearts. */
+  excited?: boolean;
   onHoverChange?: (hovered: boolean) => void;
-  /** Notifies the parent when the dog falls asleep / wakes (pauses walking). */
   onSleepingChange?: (sleeping: boolean) => void;
   onPet?: () => void;
 }
 
-// An original front-facing sitting pixel puppy (beagle-ish). One char/pixel.
-//   B brown body · D dark-brown ears/patches · W white face/chest/paws ·
-//   K nose · R tongue · E eye-white
+// Original front-facing sitting puppy (beagle-ish), high-contrast retro pixel
+// art. One char per pixel.  B brown · D dark brown · W white · K black ·
+// R red collar/tongue · E eye-white
 const PIXELS = [
   "................",
   ".DD........DD...",
   ".DDD..BBBB..DDD.",
   ".DDDBBBBBBBBDDD.",
   ".DDDBWWWWWWBDDD.",
-  ".DDWEEWWWWEEWDD.",
-  "..DWEEWWWWEEWD..",
+  ".DDWEEEWWEEEWDD.",
+  "..DWEEEWWEEEWD..",
   "..WWWWWKKWWWWW..",
   "...WWWWRRWWWW...",
-  "...BWWWWWWWWB...",
+  "...BRRRRRRRRB...",
   "..BBWWWWWWWWBB..",
   "..BBWWWWWWWWBB..",
   ".BBBWWWWWWWWBBB.",
@@ -61,18 +61,17 @@ const PIXELS = [
   "................",
 ];
 
-// Cozy, soft pastel palette — warm tan + gentle browns, soft coral tongue.
 const COLOR: Record<string, string> = {
-  B: "#D6A871", // warm soft tan body
-  D: "#9A6E45", // gentle brown ears / patches
-  W: "#FFFDF7", // warm white face / chest / paws
-  K: "#4A382E", // warm dark nose
-  R: "#EC8377", // soft coral tongue
-  E: "#FFFDF7", // eye white
+  B: "#B5723A", // brown body
+  D: "#6E4523", // dark-brown ears / patches
+  W: "#FFFFFF", // white face / chest / paws
+  K: "#1A1A1A", // black nose
+  R: "#D9342B", // red collar + tongue
+  E: "#FFFFFF", // eye white
 };
 
 const GRID_W = 16;
-const OUTLINE = "#4A372A"; // soft dark border that makes the pup read crisply
+const OUTLINE = "#1A1A1A"; // thick clean black outline
 
 function pixels(only?: (ch: string) => boolean) {
   const rects: React.ReactElement[] = [];
@@ -94,8 +93,7 @@ function isFilled(x: number, y: number) {
   return !!(row && COLOR[row[x]]);
 }
 
-// Auto 1px outline: any empty cell touching the silhouette. Drawn behind the
-// body so edges read clean and "defined" on any background.
+// Auto black outline: any empty cell touching the silhouette, drawn behind.
 function outline() {
   const rects: React.ReactElement[] = [];
   for (let y = -1; y <= PIXELS.length; y++) {
@@ -108,7 +106,7 @@ function outline() {
         isFilled(x, y + 1)
       ) {
         rects.push(
-          <rect key={`o${x}-${y}`} x={x} y={y} width="1.04" height="1.04" fill={OUTLINE} />
+          <rect key={`o${x}-${y}`} x={x} y={y} width="1.06" height="1.06" fill={OUTLINE} />
         );
       }
     }
@@ -120,16 +118,14 @@ function PixelDogArt({
   pupilX,
   pupilY,
   sleeping,
-  walking,
 }: {
   pupilX: MotionValue<number>;
   pupilY: MotionValue<number>;
   sleeping: boolean;
-  walking: boolean;
 }) {
   return (
     <svg
-      className={`duck-svg h-full w-full overflow-visible ${walking ? "walking" : ""}`}
+      className="duck-svg h-full w-full overflow-visible"
       viewBox="-1 -1 18 20"
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="crispEdges"
@@ -139,21 +135,21 @@ function PixelDogArt({
       {outline()}
       {pixels()}
 
-      {/* Eyes — white with pupils that follow the cursor; squash to blink */}
+      {/* Eyes — white with big pupils that follow the cursor; squash to blink */}
       <g className="duck-eye">
         {sleeping ? (
           <>
-            <rect x="3.9" y="5.6" width="2.4" height="0.7" fill={COLOR.K} />
-            <rect x="9.9" y="5.6" width="2.4" height="0.7" fill={COLOR.K} />
+            <rect x="3.9" y="5.7" width="3.2" height="0.8" fill={COLOR.K} />
+            <rect x="8.9" y="5.7" width="3.2" height="0.8" fill={COLOR.K} />
           </>
         ) : (
           <>
             {pixels((ch) => ch === "E")}
             <motion.g style={{ x: pupilX, y: pupilY }}>
-              <rect x="4.2" y="5.1" width="1.5" height="1.6" fill="#4A382E" />
-              <rect x="10.2" y="5.1" width="1.5" height="1.6" fill="#4A382E" />
-              <rect x="4.4" y="5.2" width="0.5" height="0.5" fill="#FFFDF7" />
-              <rect x="10.4" y="5.2" width="0.5" height="0.5" fill="#FFFDF7" />
+              <rect x="4.4" y="5.0" width="2.0" height="1.9" fill="#1A1A1A" />
+              <rect x="9.4" y="5.0" width="2.0" height="1.9" fill="#1A1A1A" />
+              <rect x="4.7" y="5.2" width="0.6" height="0.6" fill="#FFFFFF" />
+              <rect x="9.7" y="5.2" width="0.6" height="0.6" fill="#FFFFFF" />
             </motion.g>
           </>
         )}
@@ -173,7 +169,7 @@ type Heart = {
 const IDLE_SLEEP_MS = 22000;
 
 export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
-  { facing = 1, walking = false, onHoverChange, onSleepingChange, onPet },
+  { dragRegion = false, typing = false, excited = false, onHoverChange, onSleepingChange, onPet },
   ref
 ) {
   const reduceMotion = useReducedMotion();
@@ -182,10 +178,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
 
   const pupilX = useSpring(0, { stiffness: 220, damping: 18 });
   const pupilY = useSpring(0, { stiffness: 220, damping: 18 });
-  const facingMV = useSpring(facing, { stiffness: 260, damping: 22 });
-  useEffect(() => {
-    facingMV.set(facing);
-  }, [facing, facingMV]);
+  const headTilt = useSpring(0, { stiffness: 150, damping: 14 });
 
   const [happy, setHappy] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -211,14 +204,29 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
     [onSleepingChange]
   );
 
-  // Idle → sleep. Any cursor movement resets the timer (and wakes the dog).
   const armIdle = useCallback(() => {
     if (idleTimer.current) window.clearTimeout(idleTimer.current);
     if (reduceMotion) return;
     idleTimer.current = window.setTimeout(() => setSleep(true), IDLE_SLEEP_MS);
   }, [reduceMotion, setSleep]);
 
-  // Periodic blink — faster while happy; none while asleep.
+  const spawnHeart = useCallback(() => {
+    const origins: Heart["origin"][] = ["top", "left", "right"];
+    const id = ++heartId.current;
+    setHearts((prev) => [
+      ...prev,
+      {
+        id,
+        origin: origins[id % 3],
+        drift: (Math.random() - 0.5) * 22,
+        dur: 1.2 + Math.random() * 0.5,
+        size: 13 + Math.random() * 9,
+      },
+    ]);
+    window.setTimeout(() => setHearts((prev) => prev.filter((h) => h.id !== id)), 1900);
+  }, []);
+
+  // Periodic blink + occasional head tilt; none while asleep.
   useEffect(() => {
     if (reduceMotion || sleeping) return;
     let blinkTimeout: number;
@@ -231,6 +239,12 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
           eye.classList.add("blinking");
           clearId = window.setTimeout(() => eye.classList.remove("blinking"), 120);
         }
+        // Sometimes give a curious little head tilt.
+        if (Math.random() < 0.4) {
+          const dir = Math.random() < 0.5 ? -6 : 6;
+          headTilt.set(dir);
+          window.setTimeout(() => headTilt.set(0), 700);
+        }
         schedule();
       }, delay);
     };
@@ -239,10 +253,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       window.clearTimeout(blinkTimeout);
       window.clearTimeout(clearId);
     };
-  }, [reduceMotion, happy, sleeping]);
+  }, [reduceMotion, happy, sleeping, headTilt]);
 
-  // Cursor tracking: pupils follow the pointer anywhere on screen; movement
-  // also wakes the dog and re-arms the idle timer.
+  // Cursor tracking: pupils follow the pointer; movement wakes the dog.
   useEffect(() => {
     armIdle();
     const onMove = (e: MouseEvent) => {
@@ -256,18 +269,17 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       const dx = e.clientX - cx;
       const dy = e.clientY - cy;
       const dist = Math.hypot(dx, dy) || 1;
-      const sign = facing < 0 ? -1 : 1;
-      pupilX.set(sign * Math.max(-0.55, Math.min(0.55, (dx / dist) * 0.55)));
-      pupilY.set(Math.max(-0.45, Math.min(0.45, (dy / dist) * 0.45)));
+      pupilX.set(Math.max(-0.65, Math.min(0.65, (dx / dist) * 0.65)));
+      pupilY.set(Math.max(-0.5, Math.min(0.5, (dy / dist) * 0.5)));
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => {
       window.removeEventListener("mousemove", onMove);
       if (idleTimer.current) window.clearTimeout(idleTimer.current);
     };
-  }, [reduceMotion, facing, pupilX, pupilY, armIdle, setSleep]);
+  }, [reduceMotion, pupilX, pupilY, armIdle, setSleep]);
 
-  // Little "Zzz" puffs while asleep.
+  // "Zzz" while asleep.
   useEffect(() => {
     if (!sleeping || reduceMotion) return;
     const spawn = () => setZzz((z) => [...z, ++zzzId.current]);
@@ -277,12 +289,26 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   }, [sleeping, reduceMotion]);
   useEffect(() => {
     if (zzz.length === 0) return;
-    const id = window.setTimeout(
-      () => setZzz((z) => z.slice(1)),
-      1800
-    );
+    const id = window.setTimeout(() => setZzz((z) => z.slice(1)), 1800);
     return () => window.clearTimeout(id);
   }, [zzz]);
+
+  // Typing → wake + occasional excited hearts; happy bounce when typing stops.
+  useEffect(() => {
+    if (typing) setSleep(false);
+  }, [typing, setSleep]);
+  useEffect(() => {
+    if (!excited || reduceMotion) return;
+    const id = window.setInterval(spawnHeart, 3500);
+    return () => window.clearInterval(id);
+  }, [excited, reduceMotion, spawnHeart]);
+  const prevTyping = useRef(false);
+  useEffect(() => {
+    if (prevTyping.current && !typing && !reduceMotion) {
+      controls.start({ y: [0, -7, 0], transition: { duration: 0.4 } });
+    }
+    prevTyping.current = typing;
+  }, [typing, controls, reduceMotion]);
 
   const say = useCallback((line: string) => {
     bubbleKey.current += 1;
@@ -318,25 +344,6 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   );
 
   useImperativeHandle(ref, () => ({ react, say }), [react, say]);
-
-  const spawnHeart = useCallback(() => {
-    const origins: Heart["origin"][] = ["top", "left", "right"];
-    const id = ++heartId.current;
-    setHearts((prev) => [
-      ...prev,
-      {
-        id,
-        origin: origins[id % 3],
-        drift: (Math.random() - 0.5) * 22,
-        dur: 1.2 + Math.random() * 0.5,
-        size: 14 + Math.random() * 10,
-      },
-    ]);
-    window.setTimeout(
-      () => setHearts((prev) => prev.filter((h) => h.id !== id)),
-      1900
-    );
-  }, []);
 
   const handleEnter = () => {
     setHovered(true);
@@ -420,7 +427,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
         </AnimatePresence>
       </div>
 
-      {/* Floating hearts on hover */}
+      {/* Floating hearts on hover / excited typing */}
       <div className="pointer-events-none absolute inset-0 z-10 overflow-visible">
         <AnimatePresence>
           {hearts.map((h) => (
@@ -428,7 +435,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
               key={h.id}
               className={`absolute ${heartPos[h.origin]}`}
               initial={{ y: 6, opacity: 0, scale: 0.4 }}
-              animate={{ y: -60, x: h.drift, opacity: [0, 1, 1, 0], scale: 1 }}
+              animate={{ y: -58, x: h.drift, opacity: [0, 1, 1, 0], scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: h.dur, ease: "easeOut" }}
             >
@@ -444,21 +451,18 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
         aria-label="Pet the dog — it woofs"
+        {...(dragRegion ? { "data-tauri-drag-region": true } : {})}
         className="group relative block rounded-full bg-transparent p-1"
       >
-        <motion.div style={{ scaleX: facingMV }}>
-          <motion.div ref={svgWrapRef} animate={controls}>
-            <WalkBob
-              walking={walking && !hovered && !sleeping}
-              reduceMotion={!!reduceMotion}
-            >
-              <PixelDogArt
-                pupilX={pupilX}
-                pupilY={pupilY}
-                sleeping={sleeping}
-                walking={walking && !hovered && !sleeping}
-              />
-            </WalkBob>
+        <motion.div
+          ref={svgWrapRef}
+          animate={controls}
+          className={dragRegion ? "pointer-events-none" : undefined}
+        >
+          <motion.div style={{ rotate: headTilt }}>
+            <Breathe typing={typing} excited={excited} reduceMotion={!!reduceMotion}>
+              <PixelDogArt pupilX={pupilX} pupilY={pupilY} sleeping={sleeping} />
+            </Breathe>
           </motion.div>
         </motion.div>
       </button>
@@ -466,7 +470,7 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       {/* Soft contact shadow */}
       <motion.div
         aria-hidden
-        className="mt-0.5 h-2 w-20 rounded-[100%] bg-ink/25 blur-md"
+        className="mt-0.5 h-2 w-16 rounded-[100%] bg-ink/25 blur-md"
         {...(!reduceMotion && {
           animate: { scaleX: [1, 0.9, 1], opacity: [0.28, 0.2, 0.28] },
           transition: { duration: 3.5, repeat: Infinity, ease: "easeInOut" },
@@ -476,26 +480,30 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   );
 });
 
-// Walk waddle (or gentle idle bob when standing). Reduced motion: static.
-function WalkBob({
+// Gentle idle breathing; a quicker tap-bounce while typing (faster if excited).
+function Breathe({
   children,
-  walking,
+  typing,
+  excited,
   reduceMotion,
 }: {
   children: React.ReactNode;
-  walking: boolean;
+  typing: boolean;
+  excited: boolean;
   reduceMotion: boolean;
 }) {
-  if (reduceMotion)
-    return <div className="h-24 w-24 sm:h-28 sm:w-28">{children}</div>;
+  const cls = "h-24 w-24 drop-shadow-[var(--shadow-duck)] sm:h-28 sm:w-28";
+  if (reduceMotion) return <div className={cls}>{children}</div>;
   return (
     <motion.div
-      className="h-32 w-32 drop-shadow-[var(--shadow-duck)] sm:h-36 sm:w-36"
+      className={cls}
       animate={
-        walking ? { y: [0, -3, 0, -3, 0], rotate: [-3, 3, -3] } : { y: [0, -5, 0] }
+        typing
+          ? { y: [0, -2.5, 0], scaleY: [1, 0.97, 1] }
+          : { y: [0, -2, 0], scaleY: [1, 1.02, 1] }
       }
       transition={{
-        duration: walking ? 0.6 : 3.4,
+        duration: typing ? (excited ? 0.18 : 0.28) : 3.2,
         repeat: Infinity,
         ease: "easeInOut",
       }}
@@ -505,7 +513,7 @@ function WalkBob({
   );
 }
 
-// Tiny pixel heart shown on hover.
+// Tiny pixel heart.
 function PixelHeart({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 7 6" shapeRendering="crispEdges" aria-hidden>

@@ -56,13 +56,16 @@ const PIXELS = [
   "................",
 ];
 
+// A white duck: near-white body with soft grey shading + classic orange
+// beak and feet (like a Pekin duck). The drop-shadow keeps it readable on
+// light backgrounds.
 const COLOR: Record<string, string> = {
-  Y: "#FFD23F",
-  w: "#F2B100",
-  O: "#FF9E3D",
-  b: "#E07A14",
-  K: "#23303A",
-  f: "#F58A1F",
+  Y: "#FBFCFE", // body (near white)
+  w: "#D2D8E0", // grey shading / wing
+  O: "#FF9E3D", // beak
+  b: "#E07A14", // beak underside
+  K: "#23303A", // eye
+  f: "#F58A1F", // feet
 };
 
 function pixels(only?: (ch: string) => boolean) {

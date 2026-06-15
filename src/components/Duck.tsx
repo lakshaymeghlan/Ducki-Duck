@@ -44,11 +44,11 @@ interface DuckProps {
 const PIXELS = [
   "................",
   ".DD........DD...",
-  ".DDD..BBBB..DDD.",
   ".DDDBBBBBBBBDDD.",
-  ".DDDWWWWWWWWDDD.",
-  ".DDWWWWWWWWWWDD.",
-  "..DWWWWWWWWWWD..",
+  ".DDBBBBWWBBBBDD.",
+  ".DDBBBBWWBBBBDD.",
+  ".DDBBBWWWWBBBDD.",
+  "..DBWWWWWWWWBD..",
   "..WWWWWKKWWWWW..",
   "...WWWWRRWWWW...",
   "...BRRRRRRRRB...",
@@ -141,20 +141,20 @@ function PixelDogArt({
       <g className="duck-eye" shapeRendering="geometricPrecision">
         {sleeping ? (
           <>
-            <rect x="3.6" y="5.0" width="3.6" height="0.85" rx="0.4" fill={COLOR.K} />
-            <rect x="8.8" y="5.0" width="3.6" height="0.85" rx="0.4" fill={COLOR.K} />
+            <rect x="4.1" y="4.4" width="2.6" height="0.7" rx="0.35" fill={COLOR.K} />
+            <rect x="9.3" y="4.4" width="2.6" height="0.7" rx="0.35" fill={COLOR.K} />
           </>
         ) : (
           <>
-            <circle cx="5.4" cy="5.3" r="1.75" fill="#1A1A1A" />
-            <circle cx="10.6" cy="5.3" r="1.75" fill="#1A1A1A" />
-            <circle cx="5.4" cy="5.3" r="1.5" fill="#FFFFFF" />
-            <circle cx="10.6" cy="5.3" r="1.5" fill="#FFFFFF" />
+            <circle cx="5.4" cy="4.7" r="1.2" fill="#1A1A1A" />
+            <circle cx="10.6" cy="4.7" r="1.2" fill="#1A1A1A" />
+            <circle cx="5.4" cy="4.7" r="1.0" fill="#FFFFFF" />
+            <circle cx="10.6" cy="4.7" r="1.0" fill="#FFFFFF" />
             <motion.g style={{ x: pupilX, y: pupilY }}>
-              <circle cx="5.4" cy="5.3" r="0.9" fill="#1A1A1A" />
-              <circle cx="10.6" cy="5.3" r="0.9" fill="#1A1A1A" />
-              <circle cx="5.72" cy="4.98" r="0.3" fill="#FFFFFF" />
-              <circle cx="10.92" cy="4.98" r="0.3" fill="#FFFFFF" />
+              <circle cx="5.4" cy="4.7" r="0.55" fill="#1A1A1A" />
+              <circle cx="10.6" cy="4.7" r="0.55" fill="#1A1A1A" />
+              <circle cx="5.6" cy="4.5" r="0.18" fill="#FFFFFF" />
+              <circle cx="10.8" cy="4.5" r="0.18" fill="#FFFFFF" />
             </motion.g>
           </>
         )}
@@ -266,9 +266,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
     armIdle();
     const aim = (dx: number, dy: number) => {
       const dist = Math.hypot(dx, dy) || 1;
-      // Big travel so the pupils swing right to the edges like googly eyes.
-      pupilX.set(Math.max(-1.0, Math.min(1.0, (dx / dist) * 1.0)));
-      pupilY.set(Math.max(-0.95, Math.min(0.95, (dy / dist) * 0.95)));
+      // Pupils swing to the eye edges like googly eyes (sized for dog eyes).
+      pupilX.set(Math.max(-0.62, Math.min(0.62, (dx / dist) * 0.62)));
+      pupilY.set(Math.max(-0.55, Math.min(0.55, (dy / dist) * 0.55)));
     };
 
     // Desktop: poll the global cursor so the eyes track anywhere on screen.

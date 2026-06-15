@@ -75,11 +75,12 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const reduceMotion = useReducedMotion();
 
-    // Walk the border; pause while the user is petting the duck.
+    // Walk the border; pause while the user is petting the dog or it's asleep.
     const [hovered, setHovered] = useState(false);
+    const [sleeping, setSleeping] = useState(false);
     const { x, y, facing, walking } = useBorderWalk({
       mode: walkMode,
-      paused: hovered,
+      paused: hovered || sleeping,
       reduceMotion: !!reduceMotion,
     });
     const isWindowWalk = walkMode === "window";
@@ -159,6 +160,7 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
           facing={facing}
           walking={walking}
           onHoverChange={setHovered}
+          onSleepingChange={setSleeping}
         />
 
         {/* Eggs the duck has laid — click to pop */}
@@ -248,7 +250,7 @@ export const DuckScene = forwardRef<DuckHandle, DuckSceneProps>(
               onAdd={(draft) => {
                 onAddReminder(draft);
                 setQuickAdd(false);
-                duckRef.current?.react("quack.");
+                duckRef.current?.react("woof.");
               }}
             />
           )}

@@ -61,7 +61,7 @@ export function Agenda({ reminders, onAdd, onToggle, onDelete }: AgendaProps) {
   const now = new Date();
 
   return (
-    <Card title="Quack reminders" subtitle="The duck will nudge you. Out loud.">
+    <Card title="Woof reminders" subtitle="The dog will nudge you. Out loud.">
       <form onSubmit={submit} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="r-label" className="text-sm font-medium text-ink-soft">
@@ -170,7 +170,7 @@ export function Agenda({ reminders, onAdd, onToggle, onDelete }: AgendaProps) {
       <div className="mt-5">
         {reminders.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-water-deep/40 bg-white/50 px-4 py-6 text-center text-sm text-ink-soft">
-            No quacks scheduled yet. Add one and the duck will nudge you.
+            No woofs scheduled yet. Add one and the dog will nudge you.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
@@ -239,6 +239,6 @@ function defaultEmoji(type: ReminderType): string {
     case "once":
       return "⏰";
     default:
-      return "🦆";
+      return "🐶";
   }
 }

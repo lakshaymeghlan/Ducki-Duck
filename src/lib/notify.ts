@@ -46,7 +46,7 @@ export async function sendNotification(
       return;
     }
     if (webSupported() && Notification.permission === "granted") {
-      new Notification(title, { body, icon: "/duck-icon.svg" });
+      new Notification(title, { body, icon: "/dog-icon.svg" });
     }
   } catch {
     /* ignore */

@@ -15,7 +15,7 @@ export default function Pet() {
 
   const handleFire = useCallback((r: Reminder) => {
     duckRef.current?.react();
-    sendNotification(`🦆 ${r.emoji} ${r.label}`, "quack.");
+    sendNotification(`🐶 ${r.emoji} ${r.label}`, "woof.");
   }, []);
 
   useReminders({ onFire: handleFire, fireEnabled: true });
@@ -36,7 +36,7 @@ export default function Pet() {
       }
       const win = new WebviewWindow("agenda", {
         url: "index.html",
-        title: "ducki-duck — agenda",
+        title: "doggy-dog — agenda",
         width: 920,
         height: 760,
         minWidth: 360,
@@ -50,7 +50,7 @@ export default function Pet() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
-      {/* The duck walks the screen border (moves its own window) and is always
+      {/* The dog walks the screen border (moves its own window) and is always
           on top across spaces. Hover it to make it stop + get happy. */}
       <DuckScene
         ref={duckRef}

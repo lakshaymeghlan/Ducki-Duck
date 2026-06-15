@@ -29,7 +29,7 @@ export function Banner({ banner, onDismiss }: BannerProps) {
             role="alert"
           >
             <span className="text-2xl" aria-hidden>
-              🦆
+              🐶
             </span>
             <span className="text-xl" aria-hidden>
               {banner.emoji}

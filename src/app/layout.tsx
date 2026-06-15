@@ -17,9 +17,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ducki-duck 🦆",
+  title: "doggy-dog 🐶",
   description:
-    "The rubber duck that listens and never gives advice — it just quacks.",
+    "The desktop dog that listens and never gives advice — it just woofs.",
 };
 
 export default function RootLayout({

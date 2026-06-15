@@ -44,7 +44,7 @@ export default function Home() {
     (r: Reminder) => {
       duckRef.current?.react();
       showBanner(r.emoji, r.label);
-      sendNotification(`🦆 ${r.emoji} ${r.label}`, "quack.");
+      sendNotification(`🐶 ${r.emoji} ${r.label}`, "woof.");
     },
     [showBanner]
   );
@@ -69,7 +69,7 @@ export default function Home() {
 
   // Rubber-duck debugging: the duck only ever replies `quack.`
   const handleExplain = useCallback(() => {
-    duckRef.current?.react("quack.");
+    duckRef.current?.react("woof.");
     setBugCount((c) => {
       const next = c + 1;
       saveBugCount(next);
@@ -84,10 +84,10 @@ export default function Home() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-6">
         <div className="flex items-center gap-2">
           <span className="text-3xl" aria-hidden>
-            🦆
+            🐶
           </span>
           <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
-            ducki-duck
+            doggy-dog
           </h1>
         </div>
         <Clock />
@@ -104,7 +104,7 @@ export default function Home() {
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-5 py-8">
         <p className="text-center text-sm text-ink-soft">
-          A little duck waddles around the edge of the window. Click it to quack,
+          A little dog trots around the edge of the window. Click it to woof,
           right-click it for reminders, and pop the eggs it leaves behind.
         </p>
 
@@ -121,7 +121,7 @@ export default function Home() {
       </main>
 
       <footer className="mx-auto w-full max-w-5xl px-5 pb-6 text-center text-sm text-ink-soft">
-        It just quacks. Forever. By design.
+        It just woofs. Forever. By design.
       </footer>
     </div>
   );

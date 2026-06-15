@@ -71,6 +71,9 @@ const COLOR: Record<string, string> = {
   E: "#FFFDF7", // eye white
 };
 
+const GRID_W = 16;
+const OUTLINE = "#4A372A"; // soft dark border that makes the pup read crisply
+
 function pixels(only?: (ch: string) => boolean) {
   const rects: React.ReactElement[] = [];
   PIXELS.forEach((row, y) => {
@@ -83,6 +86,33 @@ function pixels(only?: (ch: string) => boolean) {
       );
     }
   });
+  return rects;
+}
+
+function isFilled(x: number, y: number) {
+  const row = PIXELS[y];
+  return !!(row && COLOR[row[x]]);
+}
+
+// Auto 1px outline: any empty cell touching the silhouette. Drawn behind the
+// body so edges read clean and "defined" on any background.
+function outline() {
+  const rects: React.ReactElement[] = [];
+  for (let y = -1; y <= PIXELS.length; y++) {
+    for (let x = -1; x <= GRID_W; x++) {
+      if (isFilled(x, y)) continue;
+      if (
+        isFilled(x - 1, y) ||
+        isFilled(x + 1, y) ||
+        isFilled(x, y - 1) ||
+        isFilled(x, y + 1)
+      ) {
+        rects.push(
+          <rect key={`o${x}-${y}`} x={x} y={y} width="1.04" height="1.04" fill={OUTLINE} />
+        );
+      }
+    }
+  }
   return rects;
 }
 
@@ -100,12 +130,13 @@ function PixelDogArt({
   return (
     <svg
       className={`duck-svg h-full w-full overflow-visible ${walking ? "walking" : ""}`}
-      viewBox="0 0 16 16"
+      viewBox="-1 -1 18 20"
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="crispEdges"
       role="img"
       aria-label="A cute pixel puppy"
     >
+      {outline()}
       {pixels()}
 
       {/* Eyes — white with pupils that follow the cursor; squash to blink */}

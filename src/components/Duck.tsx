@@ -37,30 +37,36 @@ interface DuckProps {
   onPet?: () => void;
 }
 
-// An original simple pixel DOG (side view, facing right). One char per pixel.
-//   B body (tan) · L cream belly/snout · D dark ears/tail · N nose · E eye-white
+// An original front-facing sitting pixel puppy (beagle-ish). One char/pixel.
+//   B brown body · D dark-brown ears/patches · W white face/chest/paws ·
+//   K nose · R tongue · E eye-white
 const PIXELS = [
   "................",
-  "................",
-  "..........D..D..",
-  ".D........BEEBB.",
-  ".DD......BBEEBB.",
-  "..DBBBBBBBBBBLLN",
-  "..BBBBBBBBBBBLL.",
-  ".BBBBBBBBBBBB...",
-  ".BLLLLLLLLLBB...",
-  "..BLLLLLLLBB....",
-  "..BB.....BB.....",
-  "..BB.....BB.....",
-  "..LL.....LL.....",
+  ".DD........DD...",
+  ".DDD..BBBB..DDD.",
+  ".DDDBBBBBBBBDDD.",
+  ".DDDBWWWWWWBDDD.",
+  ".DDWEEWWWWEEWDD.",
+  "..DWEEWWWWEEWD..",
+  "..WWWWWKKWWWWW..",
+  "...WWWWRRWWWW...",
+  "...BWWWWWWWWB...",
+  "..BBWWWWWWWWBB..",
+  "..BBWWWWWWWWBB..",
+  ".BBBWWWWWWWWBBB.",
+  ".BBWWWWWWWWWWBB.",
+  "..WWWWWWWWWWWW..",
+  "..WWWWWWWWWWWW..",
+  "..WWW....WWW....",
   "................",
 ];
 
 const COLOR: Record<string, string> = {
-  B: "#D9A066", // tan body
-  L: "#F4E3C6", // cream belly / snout
-  D: "#8A5A2B", // dark brown ears / tail
-  N: "#23303A", // nose
+  B: "#BC824A", // brown body
+  D: "#6E4A2B", // dark-brown ears / patches
+  W: "#FFFFFF", // white face / chest / paws
+  K: "#1E2630", // nose
+  R: "#D9342B", // tongue
   E: "#FFFFFF", // eye white
 };
 
@@ -97,19 +103,25 @@ function PixelDogArt({
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="crispEdges"
       role="img"
-      aria-label="A simple pixel dog"
+      aria-label="A cute pixel puppy"
     >
       {pixels()}
 
-      {/* Eye — white with a pupil that follows the cursor; squashes to blink */}
+      {/* Eyes — white with pupils that follow the cursor; squash to blink */}
       <g className="duck-eye">
         {sleeping ? (
-          <rect x="10.8" y="4" width="2.6" height="0.7" fill={COLOR.N} />
+          <>
+            <rect x="3.9" y="5.6" width="2.4" height="0.7" fill={COLOR.K} />
+            <rect x="9.9" y="5.6" width="2.4" height="0.7" fill={COLOR.K} />
+          </>
         ) : (
           <>
             {pixels((ch) => ch === "E")}
             <motion.g style={{ x: pupilX, y: pupilY }}>
-              <rect x="11.2" y="3.2" width="1.4" height="1.6" fill="#23303A" />
+              <rect x="4.2" y="5.1" width="1.5" height="1.6" fill="#1E2630" />
+              <rect x="10.2" y="5.1" width="1.5" height="1.6" fill="#1E2630" />
+              <rect x="4.4" y="5.2" width="0.5" height="0.5" fill="#FFFFFF" />
+              <rect x="10.4" y="5.2" width="0.5" height="0.5" fill="#FFFFFF" />
             </motion.g>
           </>
         )}
@@ -213,8 +225,8 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
       const dy = e.clientY - cy;
       const dist = Math.hypot(dx, dy) || 1;
       const sign = facing < 0 ? -1 : 1;
-      pupilX.set(sign * Math.max(-0.8, Math.min(0.8, (dx / dist) * 0.8)));
-      pupilY.set(Math.max(-0.6, Math.min(0.6, (dy / dist) * 0.6)));
+      pupilX.set(sign * Math.max(-0.55, Math.min(0.55, (dx / dist) * 0.55)));
+      pupilY.set(Math.max(-0.45, Math.min(0.45, (dy / dist) * 0.45)));
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => {

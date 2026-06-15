@@ -46,9 +46,9 @@ const PIXELS = [
   ".DD........DD...",
   ".DDD..BBBB..DDD.",
   ".DDDBBBBBBBBDDD.",
-  ".DDDBWWWWWWBDDD.",
-  ".DDWEEEWWEEEWDD.",
-  "..DWEEEWWEEEWD..",
+  ".DDDWWWWWWWWDDD.",
+  ".DDWWWWWWWWWWDD.",
+  "..DWWWWWWWWWWD..",
   "..WWWWWKKWWWWW..",
   "...WWWWRRWWWW...",
   "...BRRRRRRRRB...",
@@ -136,21 +136,25 @@ function PixelDogArt({
       {outline()}
       {pixels()}
 
-      {/* Eyes — white with big pupils that follow the cursor; squash to blink */}
-      <g className="duck-eye">
+      {/* Googly eyes — round eyeballs with a black rim and a heavy pupil that
+          swings to the cursor and wobbles. Smooth (not pixel-snapped). */}
+      <g className="duck-eye" shapeRendering="geometricPrecision">
         {sleeping ? (
           <>
-            <rect x="3.9" y="5.7" width="3.2" height="0.8" fill={COLOR.K} />
-            <rect x="8.9" y="5.7" width="3.2" height="0.8" fill={COLOR.K} />
+            <rect x="3.6" y="5.0" width="3.6" height="0.85" rx="0.4" fill={COLOR.K} />
+            <rect x="8.8" y="5.0" width="3.6" height="0.85" rx="0.4" fill={COLOR.K} />
           </>
         ) : (
           <>
-            {pixels((ch) => ch === "E")}
+            <circle cx="5.4" cy="5.3" r="1.75" fill="#1A1A1A" />
+            <circle cx="10.6" cy="5.3" r="1.75" fill="#1A1A1A" />
+            <circle cx="5.4" cy="5.3" r="1.5" fill="#FFFFFF" />
+            <circle cx="10.6" cy="5.3" r="1.5" fill="#FFFFFF" />
             <motion.g style={{ x: pupilX, y: pupilY }}>
-              <rect x="4.4" y="5.0" width="2.0" height="1.9" fill="#1A1A1A" />
-              <rect x="9.4" y="5.0" width="2.0" height="1.9" fill="#1A1A1A" />
-              <rect x="4.7" y="5.2" width="0.6" height="0.6" fill="#FFFFFF" />
-              <rect x="9.7" y="5.2" width="0.6" height="0.6" fill="#FFFFFF" />
+              <circle cx="5.4" cy="5.3" r="0.9" fill="#1A1A1A" />
+              <circle cx="10.6" cy="5.3" r="0.9" fill="#1A1A1A" />
+              <circle cx="5.72" cy="4.98" r="0.3" fill="#FFFFFF" />
+              <circle cx="10.92" cy="4.98" r="0.3" fill="#FFFFFF" />
             </motion.g>
           </>
         )}
@@ -177,8 +181,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
   const controls = useAnimationControls();
   const svgWrapRef = useRef<HTMLDivElement>(null);
 
-  const pupilX = useSpring(0, { stiffness: 220, damping: 18 });
-  const pupilY = useSpring(0, { stiffness: 220, damping: 18 });
+  // Underdamped springs → googly-eye wobble: pupils overshoot and jiggle.
+  const pupilX = useSpring(0, { stiffness: 170, damping: 7, mass: 0.85 });
+  const pupilY = useSpring(0, { stiffness: 170, damping: 7, mass: 0.85 });
   const headTilt = useSpring(0, { stiffness: 150, damping: 14 });
 
   const [happy, setHappy] = useState(false);
@@ -261,8 +266,9 @@ export const Duck = forwardRef<DuckHandle, DuckProps>(function Duck(
     armIdle();
     const aim = (dx: number, dy: number) => {
       const dist = Math.hypot(dx, dy) || 1;
-      pupilX.set(Math.max(-0.65, Math.min(0.65, (dx / dist) * 0.65)));
-      pupilY.set(Math.max(-0.5, Math.min(0.5, (dy / dist) * 0.5)));
+      // Big travel so the pupils swing right to the edges like googly eyes.
+      pupilX.set(Math.max(-1.0, Math.min(1.0, (dx / dist) * 1.0)));
+      pupilY.set(Math.max(-0.95, Math.min(0.95, (dy / dist) * 0.95)));
     };
 
     // Desktop: poll the global cursor so the eyes track anywhere on screen.
